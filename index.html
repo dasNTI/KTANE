@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTANE Interface</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <script src="/static/script.js" defer></script>
+    <link rel="shortcut icon" href="/static/img/icon.png" type="image/x-icon">
+
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/styles/wires.css">
+    <link rel="stylesheet" href="/static/styles/keypads.css">
+    <link rel="stylesheet" href="/static/styles/simonSays.css">
+    <link rel="stylesheet" href="/static/styles/password.css">
+    <link rel="stylesheet" href="/static/styles/labyrinth.css">
+</head>
+<body>
+    <button id="fullscreen" class="center-flex">⛶</button>
+
+    <div data-slide-container id="slide-container" data-slides="3">
+        <section class="slide attention center-flex" id="wires">
+            <header class="checkbox">
+                <h1>Drähte</h1>
+                <input type="checkbox" id="activate-wires" class="activator" checked="true">
+            </header>
+            <div class="module center-flex">
+                <main class="center-flex">
+                    <div class="main-notches"></div>
+
+                    <ul id="wires-left-column">
+                        <li class="wires-contact">
+                            <select class="wires-wire-color" data-wire-color-selector="0">
+                                <option value="0">✖</option>
+                                <option value="1">🟥</option>
+                                <option value="2">🟨</option>
+                                <option value="3">🟦</option>
+                                <option value="4">⬛</option>
+                                <option value="5" selected>⬜</option>
+                            </select>
+                        </li>
+                        <li class="wires-contact">
+                            <select class="wires-wire-color" data-wire-color-selector="1">
+                                <option value="0">✖</option>
+                                <option value="1">🟥</option>
+                                <option value="2" selected>🟨</option>
+                                <option value="3">🟦</option>
+                                <option value="4">⬛</option>
+                                <option value="5">⬜</option>
+                            </select>
+                        </li>
+                        <li class="wires-contact">
+                            <select class="wires-wire-color" data-wire-color-selector="2">
+                                <option value="0">✖</option>
+                                <option value="1">🟥</option>
+                                <option value="2" selected>🟨</option>
+                                <option value="3">🟦</option>
+                                <option value="4">⬛</option>
+                                <option value="5">⬜</option>
+                            </select>
+                        </li>
+                        <li class="wires-contact">
+                            <select class="wires-wire-color" data-wire-color-selector="3">
+                                <option value="0" selected>✖</option>
+                                <option value="1">🟥</option>
+                                <option value="2">🟨</option>
+                                <option value="3">🟦</option>
+                                <option value="4">⬛</option>
+                                <option value="5">⬜</option>
+                            </select>
+                        </li>
+                        <li class="wires-contact">
+                            <select class="wires-wire-color" data-wire-color-selector="4">
+                                <option value="0">✖</option>
+                                <option value="1">🟥</option>
+                                <option value="2" selected>🟨</option>
+                                <option value="3">🟦</option>
+                                <option value="4">⬛</option>
+                                <option value="5">⬜</option>
+                            </select>
+                        </li>
+                        <li class="wires-contact">
+                            <select class="wires-wire-color" data-wire-color-selector="5">
+                                <option value="0">✖</option>
+                                <option value="1">🟥</option>
+                                <option value="2">🟨</option>
+                                <option value="3">🟦</option>
+                                <option value="4" selected>⬛</option>
+                                <option value="5">⬜</option>
+                            </select>
+                        </li>
+                    </ul>
+
+                    <ul id="wires-right-column">
+                        <li class="wires-contact"></li>
+                        <li class="wires-contact"></li>
+                        <li class="wires-contact"></li>
+                        <li class="wires-contact"></li>
+                        <li class="wires-contact"></li>
+                        <li class="wires-contact"></li>
+                    </ul>
+
+                    <div id="wires-middle-column">
+                        <span class="wires-wire" style="--wire-color: white"></span>
+                        <span class="wires-wire" style="--wire-color: yellow"></span>
+                        <span class="wires-wire" style="--wire-color: yellow"></span>
+                        <span class="wires-wire" style="--wire-color: transparent"></span>
+                        <span class="wires-wire" style="--wire-color: yellow"></span>
+                        <span class="wires-wire" style="--wire-color: black"></span>
+                    </div>
+                </main>
+                <div class="topLed center-flex"></div>
+            </div>
+        </section>
+        <section class="slide attention center-flex" id="keypads">
+            <header class="checkbox">
+                <h1>Tastenfeld</h1>
+                <input type="checkbox" id="activate-keypads" class="activator" checked="true">
+            </header>
+            <div class="module center-flex">
+                <main class="center-flex">
+                    <div class="main-notches"></div>
+
+                    <div id="keypads-pads-container">
+                        <span class="keypads-pad center-flex">
+                            <img src="/static/img/keypads/9.png" draggable="false">
+                        </span>
+                        <span class="keypads-pad center-flex">
+                            <img src="/static/img/keypads/20.png" draggable="false">
+                        </span>
+                        <span class="keypads-pad center-flex">
+                            <img src="/static/img/keypads/26.png" draggable="false">
+                        </span>
+                        <span class="keypads-pad center-flex">
+                            <img src="/static/img/keypads/3.png" draggable="false">
+                        </span>
+                    </div>
+
+                    <button id="keypads-renew">
+                        <img src="/static/img/refresh.png">
+                    </button>
+                </main>
+                <div class="topLed center-flex"></div>
+            </div>
+        </section>
+        <section class="slide center-flex" id="SimonSays">
+            <header class="checkbox">
+                <h1>Simon sagt</h1>
+                <input type="checkbox" id="activate-simonSays" class="activator" checked="true">
+            </header>
+            <div class="module center-flex">
+                <main class="center-flex">
+                    <div class="main-notches"></div>
+
+                    <div id="simonSays-btn-container">
+                        <span class="simonSays-btn"></span>
+                        <span class="simonSays-btn"></span>
+                        <span class="simonSays-btn"></span>
+                        <span class="simonSays-btn"></span>
+                    </div>
+                </main>
+                <div class="topLed center-flex"></div>
+            </div>
+        </section>
+        <section class="slide center-flex" id="Passwort">
+            <header class="checkbox">
+                <h1>Passwort</h1>
+                <input type="checkbox" id="activate-password" class="activator" checked="true">
+            </header>
+            <div class="module center-flex">
+                <main class="center-flex">
+                    <div class="main-notches"></div>
+
+                    <div class="password-btn-row">
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                    </div>
+                    <div id="password-panel-container">
+                        <span id="password-panel"></span>
+                    </div>
+                    <div class="password-btn-row inverted">
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                        <span class="password-btn"></span>
+                    </div>
+                </main>
+                <div class="topLed center-flex"></div>
+            </div>
+        </section>
+        <section class="slide attention center-flex" id="Labyrinth">
+            <header class="checkbox">
+                <h1>Labyrinth</h1>
+                <input type="checkbox" id="activate-labyrinth" class="activator" checked="true">
+            </header>
+            <div class="module center-flex">
+                <main class="center-flex">
+                    <div class="main-notches"></div>
+
+                    <div class="labyrinth-btn-row">
+                        <span class="labyrinth-btn"></span>
+                        <span class="labyrinth-btn inverted"></span>
+                    </div>
+                    <div class="labyrinth-btn-row rotated">
+                        <span class="labyrinth-btn"></span>
+                        <span class="labyrinth-btn inverted"></span>
+                    </div>
+
+                    <canvas id="labyrinth-middle"></canvas>
+
+                    <button data-labyrinth-btn-back class="labyrinth-choose-btn">
+                        <img src="/static/img/arrow.png">
+                    </button>
+                    <button data-labyrinth-btn-next class="labyrinth-choose-btn inverted">
+                        <img src="/static/img/arrow.png">
+                    </button>
+                </main>
+                <div class="topLed center-flex"></div>
+            </div>
+        </section>
+        <section class="slide center-flex" id="Morse">
+            <header class="checkbox">
+                <h1>Morsecode</h1>
+                <input type="checkbox" id="activate-morse" class="activator" checked="true">
+            </header>
+            <div class="module center-flex">
+                <main class="center-flex">
+                    <div class="main-notches"></div>
+
+
+                </main>
+                <div class="topLed center-flex"></div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div style="justify-content: end;">
+            <input type="range" data-footer-clock-range min="1.5" step="0.5" max="10" value="5">
+            <span id="footer-clock" data-footer-clock>05:00</span>
+        </div>
+        <button data-start-btn>Start</button>
+        <div>
+            <button data-random-module-btn style="width: max-content;">Zufällige Module</button>
+            <div style="width: 100%">
+                <p>Anzahl: <span data-footer-module-count>3</span></p>
+                <input type="range" data-footer-module-range min="1" step="1" max="6" value="3">
+            </div>
+        </div>
+    </footer>
+
+    <div data-overlay id="overlay" class="center-flex">
+        <img src="/static/img/refresh.png">
+    </div>
+</body>
+</html>

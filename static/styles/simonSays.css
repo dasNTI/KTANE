@@ -1,0 +1,24 @@
+#simonSays-btn-container {
+    background-color: rgb(26, 26, 26);
+    height: calc(min(65vh, 65vw) / 2);
+    width: calc(min(65vh, 65vw) / 2);
+    transform: rotate(45deg);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    padding: 10px;
+    gap: 10px;
+}
+
+.simonSays-btn:nth-child(1) {
+    background-color: blue;
+}
+.simonSays-btn:nth-child(2) {
+    background-color: yellow;
+}
+.simonSays-btn:nth-child(3) {
+    background-color: red;
+}
+.simonSays-btn:nth-child(4) {
+    background-color: rgb(77, 175, 77);
+}

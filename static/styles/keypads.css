@@ -1,0 +1,37 @@
+#keypads-pads-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    height: 65%;
+    width: 65%;
+    gap: 10px;
+}
+.keypads-pad {
+    background-color: #EBDCC4;
+    position: relative;
+}
+.keypads-pad::after {
+    content: '';
+    position: absolute;
+    background-color: rgb(77, 175, 77);
+    width: 40px;
+    height: 10px;
+    top: 10px;
+}
+.keypads-pad img {
+    aspect-ratio: 1;
+    height: calc(min(65vh, 65vw) / 5);
+    image-rendering: optimizeSpeed;
+}
+
+#keypads-renew {
+    position: absolute;
+    bottom: 0;
+    background-color: rgba(153, 153, 153, 0.3);
+    border: white 3px solid;
+    padding: 7.5px 25px;
+    border-radius: 10px;
+}
+#keypads-renew img {
+    height: 30px;
+}
