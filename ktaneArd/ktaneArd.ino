@@ -1,5 +1,6 @@
 #include <LiquidCrystal.h>
 #include <LedControl.h>
+#include <SevSeg.h>
 
 bool activeModules[6] { // wires, keypads, simonSays, password, labyrinth, morse
   false, false,
@@ -12,6 +13,12 @@ bool solvedModules[6] {
   false, false
 };
 int currentMistakes = 0;
+bool gameActive = false;
+bool gameWon = false;
+int gameTimer = 0;
+int gameClock = 0;
+
+SevSeg gameTimeDisplay;
 
 // Wires
 const int wirePins[6] {1, 2, 3, 4, 5, 6};
@@ -173,13 +180,76 @@ void setup() {
     pinMode(morsePotPin, INPUT);
     pinMode(morseLedPin, OUTPUT);
 
+    labyrinthMatrix.shutdown(0, false);
+    labyrinthMatrix.setIntensity(0, 2);
+    labyrinthMatrix.clearDisplay(0);
+    
+    passwordLcd.begin(2, 16);
+
+    gameTimeDisplay.begin(COMMON_CATHODE, 4, {A1, A2, A3, A4}, {A5, A6, A7, A8, A9, A10, A11, A12});
+    gameTimeDisplay.setBrightness(90);
+
     Serial.begin(9600);
 }
 
 void handleSerial() {
+    char command = Serial.read();
+
+    if (command == 'D') {
+        String serialNr = Serial.readStringUntil(';');
+        String url = Serial.readStringUntil('\n');
+        passwordLcd.clear();
+        passwordLcd.setCursor(0, 0);
+        passwordLcd.print("Seriennr.:" + serialNr);
+        passwordLcd.setCursor(0, 1);
+        passwordLcd.print(url);
+
+        return;
+    }
+    if (command == 'A') {
+
+    }
+
+
+}
+void updateClock(bool on) {
+    if (on) {
+        gameTimeDisplay.setBrightness(90);
+    } else {
+        gameTimeDisplay.setBrightness(0);
+    }
+
+    int minutes = floor(gameTimer / 60);
+    int seconds = gameTimer % 60;
+}
+
+void handleWires() {
+
+}
+void handleKeypads() {
+
+}
+void handleSimonSays() {
+
+}
+void handlePassword() {
+
+}
+void handleLabyrinth() {
+
+}
+void handleMorse() {
 
 }
 
 void loop() {
     if (Serial.available()) handleSerial();
+
+    if (!gameActive) return;
+    gameClock += 50;
+    if (gameClock == 1000) gameClock = 0;
+
+    if (gameWon) {
+
+    }
 }

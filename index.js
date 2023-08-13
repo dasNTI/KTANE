@@ -55,7 +55,7 @@ app.post('/start', (req, res) => {
 
     let time = req.query['time'] * 2;
     if (String(time).length == 1) time = '0' + time;
-    text += 'T' + time + '_';
+    text += time + '_';
 
     if (modules.wires) {
         let wireSolution = null;
