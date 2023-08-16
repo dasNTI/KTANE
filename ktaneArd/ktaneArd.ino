@@ -1,6 +1,8 @@
 #include <LiquidCrystal.h>
 #include <LedControl.h>
 #include <SevSeg.h>
+#include <DFRobotDFPlayerMini.h>
+#include "SoftwareSerial.h"
 
 bool activeModules[6] { // wires, keypads, simonSays, password, labyrinth, morse
   false, false,
@@ -19,6 +21,10 @@ int gameTimer = 0;
 int gameClock = 0;
 
 SevSeg gameTimeDisplay;
+bool gameTimeDisplayOn = true;
+
+SoftwareSerial soundSerial(11,10); // RX, TX
+DFRobotDFPlayerMini dfPlayer;
 
 // Wires
 const int wirePins[6] {1, 2, 3, 4, 5, 6};
@@ -186,8 +192,17 @@ void setup() {
     
     passwordLcd.begin(2, 16);
 
-    gameTimeDisplay.begin(COMMON_CATHODE, 4, {A1, A2, A3, A4}, {A5, A6, A7, A8, A9, A10, A11, A12});
+    byte displayPins1[4] {A1, A2, A3, A4};
+    byte displayPins2[8] {A5, A6, A7, A8, A9, A10, A11, A12};
+    gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2);
     gameTimeDisplay.setBrightness(90);
+
+    if (!dfPlayer.begin(soundSerial)) {  //Use softwareSerial to communicate with mp3.
+        Serial.println(F("df kacke"));
+        while(true){
+            delay(0);
+        }
+    }
 
     Serial.begin(9600);
 }
@@ -221,6 +236,13 @@ void updateClock(bool on) {
 
     int minutes = floor(gameTimer / 60);
     int seconds = gameTimer % 60;
+
+    if (minutes != 0) {
+        gameTimeDisplay.setNumber(seconds + minutes * 100, 4);
+        return;
+    }
+
+
 }
 
 void handleWires() {
@@ -247,9 +269,24 @@ void loop() {
 
     if (!gameActive) return;
     gameClock += 50;
-    if (gameClock == 1000) gameClock = 0;
+    if (gameClock == 1000) {
+        gameClock = 0;
+        gameTimer--;
+    }
+    updateClock(true);
 
     if (gameWon) {
-
+        while (gameWon) {
+            updateClock(gameTimeDisplayOn);
+            gameTimeDisplayOn = !gameTimeDisplayOn;
+            if (Serial.available()) handleSerial();
+            delay(500);
+        }
+        return;
     }
+
+
+
+
+    delay(50);
 }
