@@ -16,12 +16,17 @@ bool solvedModules[6] {
 };
 int currentMistakes = 0;
 bool gameActive = false;
-bool gameWon = false;
+bool gamePaused = false;
 int gameTimer = 0;
+int gameClockInterval = 1000;
 int gameClock = 0;
+int currentMistakes = 0;
+bool timerBeeping = true;
 
 SevSeg gameTimeDisplay;
 bool gameTimeDisplayOn = true;
+#define FirstMistakeLedPin 55
+#define SecondMistakeLedPin 56
 
 SoftwareSerial soundSerial(11,10); // RX, TX
 DFRobotDFPlayerMini dfPlayer;
@@ -67,6 +72,9 @@ char passwordChars[5][6] {
     {'A', 'B', 'C', 'D', 'E', 'F'},
     {'A', 'B', 'C', 'D', 'E', 'F'}
 };
+int passwordCharIndeces[5] {0, 0, 0, 0, 0};
+int passwordSolution[5] {0, 0, 0, 0, 0};
+bool passwordBtnPressed = false;
 
 // labyrinth
 const int labyrinthBtnPins[4] {39, 40, 41, 42};
@@ -192,10 +200,14 @@ void setup() {
     
     passwordLcd.begin(2, 16);
 
+
+    pinMode(FirstMistakeLedPin, OUTPUT);
+    pinMode(SecondMistakeLedPin, OUTPUT);
     byte displayPins1[4] {A1, A2, A3, A4};
     byte displayPins2[8] {A5, A6, A7, A8, A9, A10, A11, A12};
     gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2);
     gameTimeDisplay.setBrightness(90);
+
 
     if (!dfPlayer.begin(soundSerial)) {  //Use softwareSerial to communicate with mp3.
         Serial.println(F("df kacke"));
@@ -244,9 +256,27 @@ void updateClock(bool on) {
 
 
 }
+void increaseMistakes() {
+    dfPlayer.play(3);
+    currentMistakes++;
+    gameClockInterval -= 250;
+    if (currentMistakes == 1) digitalWrite(FirstMistakeLedPin, HIGH);
+    if (currentMistakes == 2) digitalWrite(SecondMistakeLedPin, HIGH);
+    if (currentMistakes == 3) gamePaused = true;
+}
 
 void handleWires() {
+    for (int i = 0; i < 6; i++) {
+        if (digitalRead(wirePins[i]) == initialWires[i]) continue;
+        if (i == wireToBeChanged) {
+            solvedModules[0] = true;
+            return;
+        }
 
+        increaseMistakes();
+        initialWires[i] = digitalRead(wirePins[i]);
+        return;
+    }
 }
 void handleKeypads() {
 
@@ -255,7 +285,20 @@ void handleSimonSays() {
 
 }
 void handlePassword() {
+    if (!passwordBtnPressed) {
+        for (int i = 0; i < 5; i++) {
+            int up = digitalRead(passwordBtnPins[i]);
+            int down = digitalRead(passwordBtnPins[i + 5]);
 
+
+        }
+    } else {
+        bool test = true;
+        for (int i = 0; i < 10; i++) {
+            if (digitalRead(passwordBtnPins[i]) == HIGH) test = false;
+        }
+        if (digitalRead(passc))
+    }
 }
 void handleLabyrinth() {
 
@@ -269,14 +312,21 @@ void loop() {
 
     if (!gameActive) return;
     gameClock += 50;
-    if (gameClock == 1000) {
+    if (gameClock == gameClockInterval) {
         gameClock = 0;
         gameTimer--;
+        if (timerBeeping) dfPlayer.play(1);
     }
     updateClock(true);
 
-    if (gameWon) {
-        while (gameWon) {
+    if (gamePaused) {
+        if (currentMistakes == 3 || gameTimer == 0) {
+            dfPlayer.play(4);
+        }else {
+            dfPlayer.play()
+        }
+
+        while (gamePaused) {
             updateClock(gameTimeDisplayOn);
             gameTimeDisplayOn = !gameTimeDisplayOn;
             if (Serial.available()) handleSerial();
@@ -285,17 +335,12 @@ void loop() {
         return;
     }
 
-    void * functions {
-        handleWires,
-        handleKeypads,
-        handleSimonSays,
-        handlePassword,
-        handleLabyrinth,
-        handleMorse
-    };
-    for (int i = 0; i < 6; i++) {
-        if (activeModules[i] && !solvedModules[i]) functions[i]();
-    }
+    if (activeModules[0] && !solvedModules[0]) handleWires();
+    if (activeModules[1] && !solvedModules[1]) handleKeypads();
+    if (activeModules[2] && !solvedModules[2]) handleSimonSays();
+    if (activeModules[3] && !solvedModules[3]) handlePassword();
+    if (activeModules[4] && !solvedModules[4]) handleLabyrinth();
+    if (activeModules[5] && !solvedModules[5]) handleMorse();
 
     delay(50);
 }
