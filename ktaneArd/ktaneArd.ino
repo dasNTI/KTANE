@@ -285,8 +285,17 @@ void loop() {
         return;
     }
 
-
-
+    void * functions {
+        handleWires,
+        handleKeypads,
+        handleSimonSays,
+        handlePassword,
+        handleLabyrinth,
+        handleMorse
+    };
+    for (int i = 0; i < 6; i++) {
+        if (activeModules[i] && !solvedModules[i]) functions[i]();
+    }
 
     delay(50);
 }
