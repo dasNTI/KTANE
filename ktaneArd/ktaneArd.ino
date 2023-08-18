@@ -34,9 +34,9 @@ DFRobotDFPlayerMini dfPlayer;
 // Wires
 const int wirePins[6] {1, 2, 3, 4, 5, 6};
 bool initialWires[6] {
-  false, false,
-  false, false,
-  false, false
+    false, false,
+    false, false,
+    false, false
 };
 int wireToBeChanged = 0;
 
@@ -49,10 +49,10 @@ const int keypadCurrentIndex = 0;
 // simonSays
 const int simonSaysBtnPins[4] {15, 16, 17, 18};
 const int simonSaysLedPins[4] {19, 20, 21, 22};
-const int simonSaysBlinkSeq[4] = {0, 1, 2, 3};
-const int simonSaysMistake0Seq[4] = {0, 1, 2, 3};
-const int simonSaysMistake1Seq[4] = {0, 1, 2, 3};
-const int simonSaysMistake2Seq[4] = {0, 1, 2, 3};
+int simonSaysBlinkSeq[4] = {0, 1, 2, 3};
+int simonSaysMistake0Seq[4] = {0, 1, 2, 3};
+int simonSaysMistake1Seq[4] = {0, 1, 2, 3};
+int simonSaysMistake2Seq[4] = {0, 1, 2, 3};
 
 // password
 const int passwordBtnPins[10] {23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
@@ -234,10 +234,45 @@ void handleSerial() {
         return;
     }
     if (command == 'A') {
+        gameActive = false;
+        solvedModules = {};
+        activeModules = {false, false, false, false, false, false};
 
+        return;
     }
 
+    if (command != 'S') return;
 
+    gameTimer = Serial.readStringUntil('_').toInt() * 30;
+    gameClock = 0;
+    gameClockInterval = 1000;
+    currentMistakes = 0;
+
+    while (Serial.available()) {
+        char module = Serial.read();
+
+        switch (module) {
+            case 'W':
+                wireToBeChanged = Serial.readStringUntil('_').toInt();
+                for (int i = 0; i < 6; i++) {
+                    initialWires[i] = digitalRead(wirePins[i]);
+                }
+            break;
+
+            case 'K':
+                for (int i = 0; i < 4; i++) {
+                    int next = Serial.read().toInt();
+                    keypadOrder[i] = next;
+                }
+                keypadCurrentIndex = 0;
+            break;
+
+            case 'S':
+                char * blinkSeq = Serial.readBytesUntil(',', char *, 8);
+                
+            break;
+        }
+    }
 }
 void updateClock(bool on) {
     if (on) {
