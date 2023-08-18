@@ -49,10 +49,11 @@ const int keypadCurrentIndex = 0;
 // simonSays
 const int simonSaysBtnPins[4] {15, 16, 17, 18};
 const int simonSaysLedPins[4] {19, 20, 21, 22};
-int simonSaysBlinkSeq[4] = {0, 1, 2, 3};
-int simonSaysMistake0Seq[4] = {0, 1, 2, 3};
-int simonSaysMistake1Seq[4] = {0, 1, 2, 3};
-int simonSaysMistake2Seq[4] = {0, 1, 2, 3};
+int * simonSaysBlinkSeq;
+int * simonSaysMistake0Seq;
+int * simonSaysMistake1Seq;
+int * simonSaysMistake2Seq;
+int simonSaysIndex = 0;
 
 // password
 const int passwordBtnPins[10] {23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
@@ -175,9 +176,12 @@ int playerX, playerY, goalX, goalY;
 int currentMaze = 0;
 
 // morse
-char morseSeq[] = "";
+char * morseSeq = "";
 int morseSeqLength = 0;
 int morseIndex = 0;
+int morseSolution = 0;
+int morseClock = 0;
+bool morseLampStatus = false;
 #define morseLedPin 46
 #define morsePotPin A0
 #define morseBtnPin 47
@@ -243,7 +247,7 @@ void handleSerial() {
 
     if (command != 'S') return;
 
-    gameTimer = Serial.readStringUntil('_').toInt() * 30;
+    int time = Serial.readStringUntil('_').toInt() * 30;
     gameClock = 0;
     gameClockInterval = 1000;
     currentMistakes = 0;
@@ -268,11 +272,48 @@ void handleSerial() {
             break;
 
             case 'S':
-                char * blinkSeq = Serial.readBytesUntil(',', char *, 8);
-                
+                simonSaysBlinkSeq = Serial.readBytesUntil(',', char *, 8);
+                simonSaysMistake0Seq = Serial.readBytesUntil(',', char *, 8);
+                simonSaysMistake1Seq = Serial.readBytesUntil(',', char *, 8);
+                simonSaysMistake2Seq = Serial.readBytesUntil('_', char *, 8);
+                simonSaysIndex = 0;
+            break;
+
+            case 'P':
+                for (int i = 0; i < 5; i++) {
+                    for (int j = 0; j < 6; j++) {
+                        char opt = Serial.read();
+                        passwordChars
+                    }
+                }
+            break;
+
+            case 'L':
+
+            break;
+
+            case 'M':
+                morseSolution = Serial.readStringUntil(',').toInt();
+                morseSeq = Serial.readBytesUntil('_', char *, 8);
+                morseSeqLength = strlen(morseSeq);
+                morseIndex = 0;
+            break;
+
+            default:
+                Serial.read();
             break;
         }
     }
+
+    timerBeeping = false;
+    for (int i = 0; i < 4; i++) {
+        gameTimer = 4 - i;
+        updateClock(true);
+        delay(500);
+        updateClock(false);
+        delay(500);
+    }
+    gameActive = true;
 }
 void updateClock(bool on) {
     if (on) {
@@ -351,6 +392,10 @@ void loop() {
         gameClock = 0;
         gameTimer--;
         if (timerBeeping) dfPlayer.play(1);
+        if (!timerBeeping) {
+            dfplayer.play(5);
+            timerBeeping = true;
+        }
     }
     updateClock(true);
 

@@ -238,9 +238,9 @@ app.post('/start', (req, res) => {
         let chars = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ'];
 
         function charListsValid() {
-            possibleWords.find(w => w != word && charLists.reduce((prev, curr, index) => {
+            return possibleWords.find(w => w != word && charLists.reduce((prev, curr, index) => {
                 if (!curr.indexOf(w.split('')[index])) prev = false;
-            }, true))
+            }, true));          
         }
 
         do {
