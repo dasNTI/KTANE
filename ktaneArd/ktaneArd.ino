@@ -20,7 +20,6 @@ bool gamePaused = false;
 int gameTimer = 0;
 int gameClockInterval = 1000;
 int gameClock = 0;
-int currentMistakes = 0;
 bool timerBeeping = true;
 
 SevSeg gameTimeDisplay;
@@ -43,8 +42,8 @@ int wireToBeChanged = 0;
 // Keypads
 const int keypadBtnPins[4] {7, 8, 9, 10};
 const int keypadLedPins[4] {11, 12, 13, 14};
-const int keypadOrder[4] {0, 1, 2, 3};
-const int keypadCurrentIndex = 0;
+int keypadOrder[4] {0, 1, 2, 3};
+int keypadCurrentIndex = 0;
 
 // simonSays
 const int simonSaysBtnPins[4] {15, 16, 17, 18};
@@ -172,8 +171,8 @@ const byte labyrinthMazes[9][8][8] {
         {B1100, B0101, B0101, B0001, B1000, B1000, B1100, B0001}
     }
 };
-int playerX, playerY, goalX, goalY;
-int currentMaze = 0;
+int labyrinthPlayerX, labyrinthPlayerY, labyrinthGoalX, labyrinthGoalY;
+int labyrinthCurrentMaze = 0;
 
 // morse
 char * morseSeq = "";
@@ -239,8 +238,10 @@ void handleSerial() {
     }
     if (command == 'A') {
         gameActive = false;
-        solvedModules = {};
-        activeModules = {false, false, false, false, false, false};
+        for (int i = 0; i < 6; i++) {
+            solvedModules[i] = false;
+            activeModules[i] = false;
+        }
 
         return;
     }
@@ -265,39 +266,71 @@ void handleSerial() {
 
             case 'K':
                 for (int i = 0; i < 4; i++) {
-                    int next = Serial.read().toInt();
+                    int next = ((String) Serial.read()).toInt();
                     keypadOrder[i] = next;
                 }
                 keypadCurrentIndex = 0;
             break;
 
-            case 'S':
-                simonSaysBlinkSeq = Serial.readBytesUntil(',', char *, 8);
-                simonSaysMistake0Seq = Serial.readBytesUntil(',', char *, 8);
-                simonSaysMistake1Seq = Serial.readBytesUntil(',', char *, 8);
-                simonSaysMistake2Seq = Serial.readBytesUntil('_', char *, 8);
+            case 'S': {
+                String blinkSeq = Serial.readStringUntil(',');
+                String mistake0Seq = Serial.readStringUntil(',');
+                String mistake1Seq = Serial.readStringUntil(',');
+                String mistake2Seq = Serial.readStringUntil('_');
+                int length = blinkSeq.length();
+
+                char * blinkSeqC;
+                char * mistake0SeqC;
+                char * mistake1SeqC;
+                char * mistake2SeqC;
+                blinkSeq.toCharArray(blinkSeqC, length);
+                mistake0Seq.toCharArray(mistake0SeqC, length);
+                mistake1Seq.toCharArray(mistake1SeqC, length);
+                mistake2Seq.toCharArray(mistake2SeqC, length);
+
+                for (int i = 0; i < length; i++) {
+                    simonSaysBlinkSeq[i] = ((String) blinkSeqC[i]).toInt();
+                    simonSaysMistake0Seq[i] = ((String) mistake0SeqC[i]).toInt();
+                    simonSaysMistake1Seq[i] = ((String) mistake1SeqC[i]).toInt();
+                    simonSaysMistake2Seq[i] = ((String) mistake2SeqC[i]).toInt();
+                }
+
                 simonSaysIndex = 0;
-            break;
+            }
 
             case 'P':
                 for (int i = 0; i < 5; i++) {
+                    passwordSolution[i] = ((String) Serial.read()).toInt();
+                }
+                Serial.read();
+
+                for (int i = 0; i < 5; i++) {
                     for (int j = 0; j < 6; j++) {
                         char opt = Serial.read();
-                        passwordChars
+                        passwordChars[i][j] = opt;
                     }
+                    Serial.read();
                 }
+                Serial.read();
             break;
 
             case 'L':
-
+                labyrinthCurrentMaze = ((String) Serial.read()).toInt();
+                Serial.read();
+                labyrinthPlayerX = ((String) Serial.read()).toInt();
+                labyrinthPlayerY = ((String) Serial.read()).toInt();
+                Serial.read();
+                labyrinthGoalX = ((String) Serial.read()).toInt();
+                labyrinthGoalY = ((String) Serial.read()).toInt();
+                Serial.read();
             break;
 
-            case 'M':
+            case 'M': {
                 morseSolution = Serial.readStringUntil(',').toInt();
-                morseSeq = Serial.readBytesUntil('_', char *, 8);
-                morseSeqLength = strlen(morseSeq);
+                String seq = Serial.readStringUntil('_');
+                seq.toCharArray(morseSeq, seq.length());
                 morseIndex = 0;
-            break;
+            }
 
             default:
                 Serial.read();
@@ -373,7 +406,7 @@ void handlePassword() {
         for (int i = 0; i < 10; i++) {
             if (digitalRead(passwordBtnPins[i]) == HIGH) test = false;
         }
-        if (digitalRead(passc))
+        //if (digitalRead(passc))
     }
 }
 void handleLabyrinth() {
@@ -393,7 +426,7 @@ void loop() {
         gameTimer--;
         if (timerBeeping) dfPlayer.play(1);
         if (!timerBeeping) {
-            dfplayer.play(5);
+            dfPlayer.play(5);
             timerBeeping = true;
         }
     }
@@ -403,7 +436,7 @@ void loop() {
         if (currentMistakes == 3 || gameTimer == 0) {
             dfPlayer.play(4);
         }else {
-            dfPlayer.play()
+            dfPlayer.play(6);
         }
 
         while (gamePaused) {
