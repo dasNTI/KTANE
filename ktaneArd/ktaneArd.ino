@@ -14,6 +14,9 @@ bool solvedModules[6] {
   false, false,
   false, false
 };
+int moduleStatusLedPins[6] {
+    0, 1, 2, 3, 4, 5
+};
 int currentMistakes = 0;
 bool gameActive = false;
 bool gamePaused = false;
@@ -44,6 +47,7 @@ const int keypadBtnPins[4] {7, 8, 9, 10};
 const int keypadLedPins[4] {11, 12, 13, 14};
 int keypadOrder[4] {0, 1, 2, 3};
 int keypadCurrentIndex = 0;
+bool keypadBtnPressed = false;
 
 // simonSays
 const int simonSaysBtnPins[4] {15, 16, 17, 18};
@@ -53,6 +57,10 @@ int * simonSaysMistake0Seq;
 int * simonSaysMistake1Seq;
 int * simonSaysMistake2Seq;
 int simonSaysIndex = 0;
+int simonSaysUnlockedCount = 0;
+int simonSaysClock = 0;
+bool simonSaysTyping = false;
+bool simonSaysBtnPressed = false;
 
 // password
 const int passwordBtnPins[10] {23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
@@ -75,6 +83,7 @@ char passwordChars[5][6] {
 int passwordCharIndeces[5] {0, 0, 0, 0, 0};
 int passwordSolution[5] {0, 0, 0, 0, 0};
 bool passwordBtnPressed = false;
+#define passwordSubmitPin 3
 
 // labyrinth
 const int labyrinthBtnPins[4] {39, 40, 41, 42};
@@ -173,6 +182,9 @@ const byte labyrinthMazes[9][8][8] {
 };
 int labyrinthPlayerX, labyrinthPlayerY, labyrinthGoalX, labyrinthGoalY;
 int labyrinthCurrentMaze = 0;
+int labyrinthClock = 0;
+bool labyrinthBtnPressed = false;
+bool labyrinthPlayerVisible = false;
 
 // morse
 char * morseSeq = "";
@@ -202,7 +214,7 @@ void setup() {
     labyrinthMatrix.clearDisplay(0);
     
     passwordLcd.begin(2, 16);
-
+    pinMode(passwordSubmitPin, INPUT_PULLUP);
 
     pinMode(FirstMistakeLedPin, OUTPUT);
     pinMode(SecondMistakeLedPin, OUTPUT);
@@ -218,6 +230,7 @@ void setup() {
             delay(0);
         }
     }
+    for (int i = 0; i < 6; i++) pinMode(moduleStatusLedPins[i], OUTPUT);
 
     Serial.begin(9600);
 }
@@ -379,6 +392,7 @@ void handleWires() {
         if (digitalRead(wirePins[i]) == initialWires[i]) continue;
         if (i == wireToBeChanged) {
             solvedModules[0] = true;
+            digitalWrite(moduleStatusLedPins[0], HIGH);
             return;
         }
 
@@ -388,32 +402,250 @@ void handleWires() {
     }
 }
 void handleKeypads() {
+    if (keypadBtnPressed) {
+        for (int i = 0; i < 4; i++) {
+            if (digitalRead(keypadBtnPins[i]) == LOW) return; 
+        }
+        keypadBtnPressed = false;
+    }
 
+    for (int i = 0; i < 4; i++) {
+        if (digitalRead(keypadBtnPins[i]) != LOW) continue;
+        keypadBtnPressed = true;
+
+        if (keypadOrder[keypadCurrentIndex] == i) {
+            digitalWrite(keypadLedPins[i], HIGH);
+            keypadCurrentIndex++;
+        }else {
+            keypadCurrentIndex = 0;
+            for (int i = 0; i < 4; i++) digitalWrite(keypadLedPins[i], LOW);
+            increaseMistakes();
+        	return;
+        }
+    }
 }
 void handleSimonSays() {
+    simonSaysClock += 50;
 
+    if (!simonSaysTyping) {
+        if (simonSaysIndex == simonSaysUnlockedCount) {
+            if (simonSaysClock > 1500) {
+                simonSaysClock = 0;
+                simonSaysIndex = 0;
+            }
+        }else {
+            if (simonSaysClock < 500) {
+                digitalWrite(simonSaysLedPins[simonSaysBlinkSeq[simonSaysIndex]], HIGH);
+            } else {
+                digitalWrite(simonSaysLedPins[simonSaysBlinkSeq[simonSaysIndex]], LOW);
+                if (simonSaysClock >= 1250) {
+                    simonSaysClock = 0;
+                    simonSaysIndex++;
+                }
+            }
+        }
+    }
+
+    if (simonSaysTyping) {
+        if (simonSaysClock == 750) {
+            for (int i = 0; i < 4; i++) {
+                digitalWrite(simonSaysBtnPins[i], LOW);
+            }
+        }
+
+        if (simonSaysClock > 3000) {
+            simonSaysClock = 0;
+            simonSaysIndex = 0;
+            simonSaysTyping = false;
+        }
+    }
+
+    if (simonSaysBtnPressed) {
+        for (int i = 0; i < 4; i++) {
+            if (digitalRead(simonSaysBtnPins[i]) == LOW) return;
+        }
+        simonSaysBtnPressed = false;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (simonSaysBtnPressed) break;
+        if (digitalRead(simonSaysBtnPins[i]) == LOW) {
+            if (!simonSaysTyping) simonSaysIndex = 0;
+            simonSaysTyping = true;
+            simonSaysClock = 0;
+
+            int * seq;
+            if (currentMistakes == 0) seq = simonSaysMistake0Seq;
+            if (currentMistakes == 1) seq = simonSaysMistake1Seq;
+            if (currentMistakes == 2) seq = simonSaysMistake2Seq;
+
+            if (i != simonSaysMistake0Seq[simonSaysIndex]) {
+                increaseMistakes();
+                if (simonSaysIndex != 0) digitalWrite(simonSaysBtnPins[simonSaysIndex - 1], LOW);
+                simonSaysUnlockedCount = 1;
+                simonSaysIndex = 1;
+                simonSaysClock = -1500;
+            } else {
+                if (simonSaysIndex != 0) {
+                    digitalWrite(simonSaysLedPins[
+                        simonSaysMistake0Seq[simonSaysIndex - 1]
+                    ], LOW);
+                    delay(25);
+                }
+
+                digitalWrite(simonSaysBtnPins[i], HIGH);
+                simonSaysIndex++;
+                if (simonSaysIndex == simonSaysUnlockedCount) {
+                    simonSaysClock = -1000;
+                    simonSaysUnlockedCount++;
+                    simonSaysIndex++;
+
+                    if (simonSaysUnlockedCount == sizeof(simonSaysBlinkSeq) / sizeof(simonSaysBlinkSeq[0])) {
+                        solvedModules[2] = true;
+                        digitalWrite(moduleStatusLedPins[2], HIGH);
+                    }
+                }
+            }
+        }
+    }
 }
 void handlePassword() {
-    if (!passwordBtnPressed) {
-        for (int i = 0; i < 5; i++) {
-            int up = digitalRead(passwordBtnPins[i]);
-            int down = digitalRead(passwordBtnPins[i + 5]);
-
-
-        }
-    } else {
-        bool test = true;
+    if (passwordBtnPressed) {
         for (int i = 0; i < 10; i++) {
-            if (digitalRead(passwordBtnPins[i]) == HIGH) test = false;
+            if (digitalRead(passwordBtnPins[i]) == LOW) return;
         }
-        //if (digitalRead(passc))
+        if (digitalRead(passwordSubmitPin) == LOW) return;
+        passwordBtnPressed = false;
+    }
+
+    for (int i = 0; i < 5; i++) {
+        int up = digitalRead(passwordBtnPins[i]);
+        int down = digitalRead(passwordBtnPins[i + 5]);
+
+        if (up == LOW) {
+            passwordCharIndeces[i]--;
+            if (passwordCharIndeces[i] < 0) passwordCharIndeces[i] = 5;
+
+            char* text = "";
+            for (int j = 0; j < 5; j++) {
+                text += passwordChars[j][passwordCharIndeces[j]];
+            }
+            passwordLcd.clear();
+            passwordLcd.setCursor(0, 0);
+            passwordLcd.println(text);
+
+            passwordBtnPressed = true;
+            return;
+        } else if (down == LOW) {
+            passwordCharIndeces[i]++;
+            if (passwordCharIndeces[i] > 5) passwordCharIndeces[i] = 0;
+
+            char* text = "";
+            for (int j = 0; j < 5; j++) {
+                text += passwordChars[j][passwordCharIndeces[j]];
+            }
+            passwordLcd.clear();
+            passwordLcd.setCursor(0, 0);
+            passwordLcd.println(text);
+
+            passwordBtnPressed = true;
+            return;
+        }
+
+        if (digitalRead(passwordSubmitPin) == LOW) {
+            passwordBtnPressed = true;
+            for (int j = 0; j < 5; j++) {
+                if (passwordCharIndeces[j] != passwordSolution[j]) {
+                    increaseMistakes();
+                    return;
+                }
+            }
+
+            solvedModules[3] = true;
+            digitalWrite(moduleStatusLedPins[3], HIGH);
+        }
     }
 }
 void handleLabyrinth() {
+    labyrinthClock += 50;
+    if (labyrinthClock == 500) {
+        labyrinthClock = 0;
+        labyrinthPlayerVisible = !labyrinthPlayerVisible;
+    }
 
+    if (digitalRead(labyrinthBtnPins[0]) == LOW) {
+        if (labyrinthBtnPressed) return;
+        if (labyrinthPlayerY > 0) labyrinthPlayerY -= 1;
+        labyrinthBtnPressed = true;
+    } else if (digitalRead(labyrinthBtnPins[2]) == LOW) {
+        if (labyrinthBtnPressed) return;
+        if (labyrinthPlayerY < 7) labyrinthPlayerY += 1;
+        labyrinthBtnPressed = true;
+    } else if (digitalRead(labyrinthBtnPins[3]) == LOW) {
+        if (labyrinthBtnPressed) return;
+        if (labyrinthPlayerX > 0) labyrinthPlayerX -= 1;
+        labyrinthBtnPressed = true;
+    } else if (digitalRead(labyrinthBtnPins[1]) == LOW) {
+        if (labyrinthBtnPressed) return;
+        if (labyrinthPlayerX < 7) labyrinthPlayerX += 1;
+        labyrinthBtnPressed = true;
+    } else {
+        labyrinthBtnPressed = false;
+    }
+
+    int goalXConversion = pow(2, 7 - labyrinthGoalX);
+    int playerXConversion = 128;
+    for (int i = 0; i < labyrinthPlayerX; i++) playerXConversion /= 2;
+
+    for (int row = 0; row < 8; row++) {
+        int dots = 0;
+        if (row == labyrinthGoalY && !(labyrinthPlayerX == labyrinthGoalX && labyrinthPlayerY == labyrinthGoalY)) dots += goalXConversion;
+        if (row == labyrinthPlayerY && labyrinthPlayerVisible) dots += playerXConversion;
+        labyrinthMatrix.setRow(0, row, (byte) dots);
+    }
 }
 void handleMorse() {
+    morseClock++;
 
+    if (digitalRead(morseBtnPin) == LOW) {
+        int v = analogRead(morsePotPin);
+        int freq = round(v / 16);
+        if (freq == morseSolution) {
+            solvedModules[5] = true;
+            digitalWrite(moduleStatusLedPins[5], HIGH);
+        }
+    }
+
+    if (morseIndex == morseSeqLength) {
+        if (morseClock >= 1500) {
+            morseClock = 0;
+            morseIndex = 0;
+        }
+        return;
+    }
+
+    char c = morseSeq[morseIndex];
+    if (c == '-') {
+        if (morseClock >= 850) {
+            morseClock = 0;
+            morseIndex++;
+        }
+        return;
+    }
+
+    int blinkLength = 0;
+    if (c == '0') blinkLength = 350;
+    if (c == '1') blinkLength = 650;
+
+    if (morseClock < blinkLength) {
+        digitalWrite(morseLedPin, HIGH);
+    }else {
+        digitalWrite(morseLedPin, LOW);
+        if (morseClock > blinkLength + 250) {
+            morseClock = 0;
+            morseIndex++;
+        }
+    }
 }
 
 void loop() {
