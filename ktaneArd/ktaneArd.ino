@@ -575,18 +575,46 @@ void handleLabyrinth() {
 
     if (digitalRead(labyrinthBtnPins[0]) == LOW) {
         if (labyrinthBtnPressed) return;
+
+        byte testByte = labyrinthMazes[labyrinthCurrentMaze][labyrinthPlayerY][labyrinthPlayerX];
+        if (testByte & B1000 == 0x0) {
+            increaseMistakes();
+            return;
+        }
+
         if (labyrinthPlayerY > 0) labyrinthPlayerY -= 1;
         labyrinthBtnPressed = true;
     } else if (digitalRead(labyrinthBtnPins[2]) == LOW) {
         if (labyrinthBtnPressed) return;
+
+        byte testByte = labyrinthMazes[labyrinthCurrentMaze][labyrinthPlayerY][labyrinthPlayerX];
+        if (testByte & B0010 == 0x0) {
+            increaseMistakes();
+            return;
+        }
+
         if (labyrinthPlayerY < 7) labyrinthPlayerY += 1;
         labyrinthBtnPressed = true;
     } else if (digitalRead(labyrinthBtnPins[3]) == LOW) {
         if (labyrinthBtnPressed) return;
+
+        byte testByte = labyrinthMazes[labyrinthCurrentMaze][labyrinthPlayerY][labyrinthPlayerX];
+        if (testByte & B0001 == 0x0) {
+            increaseMistakes();
+            return;
+        }
+
         if (labyrinthPlayerX > 0) labyrinthPlayerX -= 1;
         labyrinthBtnPressed = true;
     } else if (digitalRead(labyrinthBtnPins[1]) == LOW) {
         if (labyrinthBtnPressed) return;
+
+        byte testByte = labyrinthMazes[labyrinthCurrentMaze][labyrinthPlayerY][labyrinthPlayerX];
+        if (testByte & B0100 == 0x0) {
+            increaseMistakes();
+            return;
+        }
+
         if (labyrinthPlayerX < 7) labyrinthPlayerX += 1;
         labyrinthBtnPressed = true;
     } else {
