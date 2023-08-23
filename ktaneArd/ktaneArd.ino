@@ -521,7 +521,7 @@ void handlePassword() {
     for (int i = 0; i < 5; i++) {
         int up = digitalRead(passwordBtnPins[i]);
         int down = digitalRead(passwordBtnPins[i + 5]);
-
+oo
         if (up == LOW) {
             passwordCharIndeces[i]--;
             if (passwordCharIndeces[i] < 0) passwordCharIndeces[i] = 5;
@@ -630,6 +630,11 @@ void handleLabyrinth() {
         if (row == labyrinthGoalY && !(labyrinthPlayerX == labyrinthGoalX && labyrinthPlayerY == labyrinthGoalY)) dots += goalXConversion;
         if (row == labyrinthPlayerY && labyrinthPlayerVisible) dots += playerXConversion;
         labyrinthMatrix.setRow(0, row, (byte) dots);
+    }
+
+    if (labyrinthPLayerX == labyrinthGoalX && labyrinthPlayerY == labyrinthGoalY) {
+        solvedModules[4] = true;
+        digitalWrite(moduleStatusLedPins[4], HIGH);
     }
 }
 void handleMorse() {
