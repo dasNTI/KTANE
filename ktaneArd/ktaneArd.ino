@@ -268,10 +268,13 @@ void handleSerial() {
 
     while (Serial.available()) {
         char module = Serial.read();
+        Serial.println(module);
 
         switch (module) {
             case 'W':
                 wireToBeChanged = Serial.readStringUntil('_').toInt();
+                Serial.print("Wires Lösung: ");
+                Serial.println(wireToBeChanged);
                 for (int i = 0; i < 6; i++) {
                     initialWires[i] = digitalRead(wirePins[i]);
                 }
@@ -280,6 +283,8 @@ void handleSerial() {
             case 'K':
                 for (int i = 0; i < 4; i++) {
                     int next = ((String) Serial.read()).toInt();
+                    Serial.print("Next Keypad: ");
+                    Serial.println(next);
                     keypadOrder[i] = next;
                 }
                 keypadCurrentIndex = 0;
@@ -308,6 +313,10 @@ void handleSerial() {
                     simonSaysMistake2Seq[i] = ((String) mistake2SeqC[i]).toInt();
                 }
 
+                Serial.println(simonSaysBlinkSeq);
+                Serial.println(simonSaysMistake0Seq);
+                Serial.println(simonSaysMistake1Seq);
+                Serial.println(simonSaysMistake2Seq);
                 simonSaysIndex = 0;
             }
 
@@ -316,6 +325,7 @@ void handleSerial() {
                     passwordSolution[i] = ((String) Serial.read()).toInt();
                 }
                 Serial.read();
+                Serial.println(passwordSolution);
 
                 for (int i = 0; i < 5; i++) {
                     for (int j = 0; j < 6; j++) {
@@ -325,6 +335,7 @@ void handleSerial() {
                     Serial.read();
                 }
                 Serial.read();
+                Serial.println(passwordChars);
             break;
 
             case 'L':
@@ -336,6 +347,7 @@ void handleSerial() {
                 labyrinthGoalX = ((String) Serial.read()).toInt();
                 labyrinthGoalY = ((String) Serial.read()).toInt();
                 Serial.read();
+                Serial.println(labyrinthCurrentMaze);
             break;
 
             case 'M': {
@@ -343,6 +355,7 @@ void handleSerial() {
                 String seq = Serial.readStringUntil('_');
                 seq.toCharArray(morseSeq, seq.length());
                 morseIndex = 0;
+                Serial.println(morseSeq);
             }
 
             default:
