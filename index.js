@@ -3,13 +3,17 @@ const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
 const bodyParser = require('body-parser');
 
-const serial = new SerialPort({
+let serial = new SerialPort({
     baudRate: 9600,
     path: 'COM3'
 });
 const parser = new ReadlineParser();
 serial.pipe(parser);
 parser.on('data', (data) => console.log(data));
+
+SerialPort.list().then(list => {
+    serial.path = list[0];
+});
 
 const app = express();
 app.use(express.json());
