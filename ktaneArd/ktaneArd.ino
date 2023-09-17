@@ -218,8 +218,8 @@ void setup() {
 
     pinMode(FirstMistakeLedPin, OUTPUT);
     pinMode(SecondMistakeLedPin, OUTPUT);
-    byte displayPins1[4] {A1, A2, A3, A4};
-    byte displayPins2[8] {A5, A6, A7, A8, A9, A10, A11, A12};
+    byte displayPins1[4] {A5, A2, A1, 13};
+    byte displayPins2[8] {A4, A0, 11, 9, 8, A3, 12, 10};
     gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2);
     gameTimeDisplay.setBrightness(90);
 
@@ -313,10 +313,10 @@ void handleSerial() {
                     simonSaysMistake2Seq[i] = ((String) mistake2SeqC[i]).toInt();
                 }
 
-                Serial.println(simonSaysBlinkSeq);
-                Serial.println(simonSaysMistake0Seq);
-                Serial.println(simonSaysMistake1Seq);
-                Serial.println(simonSaysMistake2Seq);
+                Serial.println(simonSaysBlinkSeq[0]);
+                Serial.println(simonSaysMistake0Seq[0]);
+                Serial.println(simonSaysMistake1Seq[0]);
+                Serial.println(simonSaysMistake2Seq[0]);
                 simonSaysIndex = 0;
             }
 
@@ -325,7 +325,7 @@ void handleSerial() {
                     passwordSolution[i] = ((String) Serial.read()).toInt();
                 }
                 Serial.read();
-                Serial.println(passwordSolution);
+                Serial.println(passwordSolution[0]);
 
                 for (int i = 0; i < 5; i++) {
                     for (int j = 0; j < 6; j++) {
@@ -335,7 +335,7 @@ void handleSerial() {
                     Serial.read();
                 }
                 Serial.read();
-                Serial.println(passwordChars);
+                Serial.println(passwordChars[0][0]);
             break;
 
             case 'L':
@@ -733,5 +733,6 @@ void loop() {
     if (activeModules[4] && !solvedModules[4]) handleLabyrinth();
     if (activeModules[5] && !solvedModules[5]) handleMorse();
 
+    gameTimeDisplay.refreshDisplay();
     delay(50);
 }
