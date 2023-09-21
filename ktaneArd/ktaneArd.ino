@@ -697,6 +697,12 @@ void handleMorse() {
 void loop() {
     if (Serial.available()) handleSerial();
 
+    gameTimeDisplay.refreshDisplay();
+
+    static int timer = millis();
+    if (millis() - timer < 50) return;
+    timer = millis();
+
     if (!gameActive) return;
     gameClock += 50;
     if (gameClock == gameClockInterval) {
@@ -732,7 +738,4 @@ void loop() {
     if (activeModules[3] && !solvedModules[3]) handlePassword();
     if (activeModules[4] && !solvedModules[4]) handleLabyrinth();
     if (activeModules[5] && !solvedModules[5]) handleMorse();
-
-    gameTimeDisplay.refreshDisplay();
-    delay(50);
 }
