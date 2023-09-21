@@ -696,6 +696,11 @@ void handleMorse() {
 
 void loop() {
     if (Serial.available()) handleSerial();
+    gameTimeDisplay.refreshDisplay();
+
+    static unsigned int timer = millis();
+    if (millis() - timer < 50) return;
+    timer = millis();
 
     gameTimeDisplay.refreshDisplay();
 
