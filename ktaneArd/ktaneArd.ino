@@ -14,8 +14,8 @@ bool solvedModules[6] {
   false, false,
   false, false
 };
-int moduleStatusLedPins[6] {
-    0, 1, 2, 3, 4, 5
+int moduleStatusLedPins[] {
+    22, 23, 24, 25, 26, 27                                                                                                                                                                                          , 1, 2, 3, 4, 5
 };
 int currentMistakes = 0;
 bool gameActive = false;
@@ -34,7 +34,7 @@ SoftwareSerial soundSerial(11,10); // RX, TX
 DFRobotDFPlayerMini dfPlayer;
 
 // Wires
-const int wirePins[6] {1, 2, 3, 4, 5, 6};
+const int wirePins[6] {7, 6, 4, 5, 3, 2};
 bool initialWires[6] {
     false, false,
     false, false,
@@ -43,15 +43,15 @@ bool initialWires[6] {
 int wireToBeChanged = 0;
 
 // Keypads
-const int keypadBtnPins[4] {7, 8, 9, 10};
-const int keypadLedPins[4] {11, 12, 13, 14};
+const int keypadBtnPins[4] {53, 46, 49, 50};
+const int keypadLedPins[4] {47, 52, 51, 48};
 int keypadOrder[4] {0, 1, 2, 3};
 int keypadCurrentIndex = 0;
 bool keypadBtnPressed = false;
 
 // simonSays
-const int simonSaysBtnPins[4] {15, 16, 17, 18};
-const int simonSaysLedPins[4] {19, 20, 21, 22};
+const int simonSaysBtnPins[4] {38, 42, 40, 44};
+const int simonSaysLedPins[4] {45, 41, 43, 39};
 int * simonSaysBlinkSeq;
 int * simonSaysMistake0Seq;
 int * simonSaysMistake1Seq;
@@ -63,31 +63,31 @@ bool simonSaysTyping = false;
 bool simonSaysBtnPressed = false;
 
 // password
-const int passwordBtnPins[10] {23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
-const int passwordLcdPins[6] {33, 34, 35, 36, 37, 38};
-LiquidCrystal passwordLcd = LiquidCrystal(
-    passwordLcdPins[5],
-    passwordLcdPins[4],
-    passwordLcdPins[3],
-    passwordLcdPins[2],
-    passwordLcdPins[1],
-    passwordLcdPins[0]
-);
-char passwordChars[5][6] {
-    {'A', 'B', 'C', 'D', 'E', 'F'},
-    {'A', 'B', 'C', 'D', 'E', 'F'},
-    {'A', 'B', 'C', 'D', 'E', 'F'},
-    {'A', 'B', 'C', 'D', 'E', 'F'},
-    {'A', 'B', 'C', 'D', 'E', 'F'}
-};
-int passwordCharIndeces[5] {0, 0, 0, 0, 0};
-int passwordSolution[5] {0, 0, 0, 0, 0};
-bool passwordBtnPressed = false;
-#define passwordSubmitPin 3
+//const int passwordBtnPins[10] {23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
+//const int passwordLcdPins[6] {33, 34, 35, 36, 37, 38};
+//LiquidCrystal passwordLcd = LiquidCrystal(
+//    passwordLcdPins[5],
+//    passwordLcdPins[4],
+//    passwordLcdPins[3],
+//    passwordLcdPins[2],
+//    passwordLcdPins[1],
+//    passwordLcdPins[0]
+//);
+//char passwordChars[5][6] {
+//    {'A', 'B', 'C', 'D', 'E', 'F'},
+//    {'A', 'B', 'C', 'D', 'E', 'F'},
+//    {'A', 'B', 'C', 'D', 'E', 'F'},
+//    {'A', 'B', 'C', 'D', 'E', 'F'},
+//    {'A', 'B', 'C', 'D', 'E', 'F'}
+//};
+//int passwordCharIndeces[5] {0, 0, 0, 0, 0};
+//int passwordSolution[5] {0, 0, 0, 0, 0};
+//bool passwordBtnPressed = false;
+//#define passwordSubmitPin 3
 
 // labyrinth
-const int labyrinthBtnPins[4] {39, 40, 41, 42};
-LedControl labyrinthMatrix = LedControl(43, 44, 45, 1);
+const int labyrinthBtnPins[4] {28, 30, 32, 34};
+LedControl labyrinthMatrix = LedControl(31, 33, 35, 1);
 const byte labyrinthMazes[9][8][8] {
     {
         {B0110, B0101, B0101, B0111, B0011, B0010, B0110, B0011},
@@ -193,9 +193,9 @@ int morseIndex = 0;
 int morseSolution = 0;
 int morseClock = 0;
 bool morseLampStatus = false;
-#define morseLedPin 46
-#define morsePotPin A0
-#define morseBtnPin 47
+#define morseLedPin 36
+#define morsePotPin A10
+#define morseBtnPin 37
 
 void setup() {
     for (int i = 0; i < 6; i++) pinMode(wirePins[i], INPUT_PULLUP);
@@ -203,7 +203,7 @@ void setup() {
     for (int i = 0; i < 4; i++) pinMode(keypadLedPins[i], OUTPUT);
     for (int i = 0; i < 4; i++) pinMode(simonSaysBtnPins[i], INPUT_PULLUP);
     for (int i = 0; i < 4; i++) pinMode(simonSaysLedPins[i], OUTPUT);
-    for (int i = 0; i < 10; i++) pinMode(passwordBtnPins[i], INPUT_PULLUP);
+    //for (int i = 0; i < 10; i++) pinMode(passwordBtnPins[i], INPUT_PULLUP);
     for (int i = 0; i < 4; i++) pinMode(labyrinthBtnPins[i], INPUT_PULLUP);
     pinMode(morseBtnPin, INPUT_PULLUP);
     pinMode(morsePotPin, INPUT);
@@ -213,8 +213,8 @@ void setup() {
     labyrinthMatrix.setIntensity(0, 2);
     labyrinthMatrix.clearDisplay(0);
     
-    passwordLcd.begin(2, 16);
-    pinMode(passwordSubmitPin, INPUT_PULLUP);
+    //passwordLcd.begin(2, 16);
+    //pinMode(passwordSubmitPin, INPUT_PULLUP);
 
     pinMode(FirstMistakeLedPin, OUTPUT);
     pinMode(SecondMistakeLedPin, OUTPUT);
@@ -241,11 +241,11 @@ void handleSerial() {
     if (command == 'D') {
         String serialNr = Serial.readStringUntil(';');
         String url = Serial.readStringUntil('\n');
-        passwordLcd.clear();
-        passwordLcd.setCursor(0, 0);
-        passwordLcd.print("Seriennr.:" + serialNr);
-        passwordLcd.setCursor(0, 1);
-        passwordLcd.print(url);
+        //passwordLcd.clear();
+        //passwordLcd.setCursor(0, 0);
+        //passwordLcd.print("Seriennr.:" + serialNr);
+        //passwordLcd.setCursor(0, 1);
+        //passwordLcd.print(url);
 
         return;
     }
@@ -321,21 +321,21 @@ void handleSerial() {
             }
 
             case 'P':
-                for (int i = 0; i < 5; i++) {
-                    passwordSolution[i] = ((String) Serial.read()).toInt();
-                }
-                Serial.read();
-                Serial.println(passwordSolution[0]);
-
-                for (int i = 0; i < 5; i++) {
-                    for (int j = 0; j < 6; j++) {
-                        char opt = Serial.read();
-                        passwordChars[i][j] = opt;
-                    }
-                    Serial.read();
-                }
-                Serial.read();
-                Serial.println(passwordChars[0][0]);
+                //for (int i = 0; i < 5; i++) {
+                //    passwordSolution[i] = ((String) Serial.read()).toInt();
+                //}
+                //Serial.read();
+                //Serial.println(passwordSolution[0]);
+//
+                //for (int i = 0; i < 5; i++) {
+                //    for (int j = 0; j < 6; j++) {
+                //        char opt = Serial.read();
+                //        passwordChars[i][j] = opt;
+                //    }
+                //    Serial.read();
+                //}
+                //Serial.read();
+                //Serial.println(passwordChars[0][0]);
             break;
 
             case 'L':
@@ -523,61 +523,61 @@ void handleSimonSays() {
     }
 }
 void handlePassword() {
-    if (passwordBtnPressed) {
-        for (int i = 0; i < 10; i++) {
-            if (digitalRead(passwordBtnPins[i]) == LOW) return;
-        }
-        if (digitalRead(passwordSubmitPin) == LOW) return;
-        passwordBtnPressed = false;
-    }
-
-    for (int i = 0; i < 5; i++) {
-        int up = digitalRead(passwordBtnPins[i]);
-        int down = digitalRead(passwordBtnPins[i + 5]);
-
-        if (up == LOW) {
-            passwordCharIndeces[i]--;
-            if (passwordCharIndeces[i] < 0) passwordCharIndeces[i] = 5;
-
-            char* text = "";
-            for (int j = 0; j < 5; j++) {
-                text += passwordChars[j][passwordCharIndeces[j]];
-            }
-            passwordLcd.clear();
-            passwordLcd.setCursor(0, 0);
-            passwordLcd.println(text);
-
-            passwordBtnPressed = true;
-            return;
-        } else if (down == LOW) {
-            passwordCharIndeces[i]++;
-            if (passwordCharIndeces[i] > 5) passwordCharIndeces[i] = 0;
-
-            char* text = "";
-            for (int j = 0; j < 5; j++) {
-                text += passwordChars[j][passwordCharIndeces[j]];
-            }
-            passwordLcd.clear();
-            passwordLcd.setCursor(0, 0);
-            passwordLcd.println(text);
-
-            passwordBtnPressed = true;
-            return;
-        }
-
-        if (digitalRead(passwordSubmitPin) == LOW) {
-            passwordBtnPressed = true;
-            for (int j = 0; j < 5; j++) {
-                if (passwordCharIndeces[j] != passwordSolution[j]) {
-                    increaseMistakes();
-                    return;
-                }
-            }
-
-            solvedModules[3] = true;
-            digitalWrite(moduleStatusLedPins[3], HIGH);
-        }
-    }
+    //if (passwordBtnPressed) {
+    //    for (int i = 0; i < 10; i++) {
+    //        if (digitalRead(passwordBtnPins[i]) == LOW) return;
+    //    }
+    //    if (digitalRead(passwordSubmitPin) == LOW) return;
+    //    passwordBtnPressed = false;
+    //}
+//
+    //for (int i = 0; i < 5; i++) {
+    //    int up = digitalRead(passwordBtnPins[i]);
+    //    int down = digitalRead(passwordBtnPins[i + 5]);
+//
+    //    if (up == LOW) {
+    //        passwordCharIndeces[i]--;
+    //        if (passwordCharIndeces[i] < 0) passwordCharIndeces[i] = 5;
+//
+    //        char* text = "";
+    //        for (int j = 0; j < 5; j++) {
+    //            text += passwordChars[j][passwordCharIndeces[j]];
+    //        }
+    //        passwordLcd.clear();
+    //        passwordLcd.setCursor(0, 0);
+    //        passwordLcd.println(text);
+//
+    //        passwordBtnPressed = true;
+    //        return;
+    //    } else if (down == LOW) {
+    //        passwordCharIndeces[i]++;
+    //        if (passwordCharIndeces[i] > 5) passwordCharIndeces[i] = 0;
+//
+    //        char* text = "";
+    //        for (int j = 0; j < 5; j++) {
+    //            text += passwordChars[j][passwordCharIndeces[j]];
+    //        }
+    //        passwordLcd.clear();
+    //        passwordLcd.setCursor(0, 0);
+    //        passwordLcd.println(text);
+//
+    //        passwordBtnPressed = true;
+    //        return;
+    //    }
+//
+    //    if (digitalRead(passwordSubmitPin) == LOW) {
+    //        passwordBtnPressed = true;
+    //        for (int j = 0; j < 5; j++) {
+    //            if (passwordCharIndeces[j] != passwordSolution[j]) {
+    //                increaseMistakes();
+    //                return;
+    //            }
+    //        }
+//
+    //        solvedModules[3] = true;
+    //        digitalWrite(moduleStatusLedPins[3], HIGH);
+    //    }
+    //}
 }
 void handleLabyrinth() {
     labyrinthClock += 50;
@@ -694,11 +694,12 @@ void handleMorse() {
     }
 }
 
+unsigned int timer = millis();
 void loop() {
     if (Serial.available()) handleSerial();
     gameTimeDisplay.refreshDisplay();
 
-    static unsigned int timer = millis();
+    
     if (millis() - timer < 50) return;
     timer = millis();
 
