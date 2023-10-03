@@ -27,10 +27,10 @@ bool timerBeeping = true;
 
 SevSeg gameTimeDisplay;
 bool gameTimeDisplayOn = true;
-#define FirstMistakeLedPin 55
-#define SecondMistakeLedPin 56
+#define FirstMistakeLedPin A7
+#define SecondMistakeLedPin A6
 
-SoftwareSerial soundSerial(11,10); // RX, TX
+SoftwareSerial soundSerial(A8, A9); // RX, TX
 DFRobotDFPlayerMini dfPlayer;
 
 // Wires
@@ -220,7 +220,7 @@ void setup() {
     pinMode(SecondMistakeLedPin, OUTPUT);
     byte displayPins1[4] {A5, A2, A1, 13};
     byte displayPins2[8] {A4, A0, 11, 9, 8, A3, 12, 10};
-    gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2);
+    gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2, false, true);
     gameTimeDisplay.setBrightness(90);
 
 
@@ -691,23 +691,13 @@ void handleMorse() {
             morseClock = 0;
             morseIndex++;
         }
-    }
+    } 
 }
 
 unsigned int timer = millis();
 void loop() {
     if (Serial.available()) handleSerial();
     gameTimeDisplay.refreshDisplay();
-
-    
-    if (millis() - timer < 50) return;
-    timer = millis();
-
-    gameTimeDisplay.refreshDisplay();
-
-    static int timer = millis();
-    if (millis() - timer < 50) return;
-    timer = millis();
 
     if (!gameActive) return;
     gameClock += 50;
@@ -744,4 +734,6 @@ void loop() {
     if (activeModules[3] && !solvedModules[3]) handlePassword();
     if (activeModules[4] && !solvedModules[4]) handleLabyrinth();
     if (activeModules[5] && !solvedModules[5]) handleMorse();
+
+    delay(50);
 }
