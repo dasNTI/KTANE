@@ -5,15 +5,15 @@ const bodyParser = require('body-parser');
 
 let serial = new SerialPort({
     baudRate: 9600,
-    path: 'COM3'
+    path: 'COM5'
 });
 const parser = new ReadlineParser();
 serial.pipe(parser);
 parser.on('data', (data) => console.log(data));
 
-SerialPort.list().then(list => {
-    serial.path = list[0];
-});
+//SerialPort.list().then(list => {
+//    serial.path = list[0];
+//});
 
 const app = express();
 app.use(express.json());
@@ -414,6 +414,7 @@ app.use('/static', express.static(__dirname + '/static/'));
 const server = require('http').createServer(app);
 server.listen(3000, () => {
     console.log(serialNr);
+    console.log(require('ip').address());
     setTimeout(() => {
         serial.write('D' + serialNr + ";" + require('ip').address());
     }, 1000);

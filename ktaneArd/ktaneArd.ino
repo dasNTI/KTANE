@@ -30,7 +30,7 @@ bool gameTimeDisplayOn = true;
 #define FirstMistakeLedPin A7
 #define SecondMistakeLedPin A6
 
-SoftwareSerial soundSerial(A8, A9); // RX, TX
+SoftwareSerial soundSerial(A9, A8); // RX, TX
 DFRobotDFPlayerMini dfPlayer;
 
 // Wires
@@ -198,6 +198,8 @@ bool morseLampStatus = false;
 #define morseBtnPin 37
 
 void setup() {
+    Serial.begin(9600);
+
     for (int i = 0; i < 6; i++) pinMode(wirePins[i], INPUT_PULLUP);
     for (int i = 0; i < 4; i++) pinMode(keypadBtnPins[i], INPUT_PULLUP);
     for (int i = 0; i < 4; i++) pinMode(keypadLedPins[i], OUTPUT);
@@ -222,21 +224,24 @@ void setup() {
     byte displayPins2[8] {A4, A0, 11, 9, 8, A3, 12, 10};
     gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2, false, true);
     gameTimeDisplay.setBrightness(90);
+    gameTimeDisplay.setNumber(6969, -1);
 
-
+    soundSerial.begin(9600);
+  	delay(1000);
     if (!dfPlayer.begin(soundSerial)) {  //Use softwareSerial to communicate with mp3.
         Serial.println(F("df kacke"));
         while(true){
             delay(0);
         }
     }
+    dfPlayer.play(5);
     for (int i = 0; i < 6; i++) pinMode(moduleStatusLedPins[i], OUTPUT);
 
-    Serial.begin(9600);
 }
 
 void handleSerial() {
     char command = Serial.read();
+    delay(1000);
 
     if (command == 'D') {
         String serialNr = Serial.readStringUntil(';');
@@ -255,16 +260,17 @@ void handleSerial() {
             solvedModules[i] = false;
             activeModules[i] = false;
         }
-
         return;
     }
 
-    if (command != 'S') return;
+    if (command != 'G') return;
 
     int time = Serial.readStringUntil('_').toInt() * 30;
     gameClock = 0;
     gameClockInterval = 1000;
     currentMistakes = 0;
+    Serial.print("T: ");
+    Serial.println(time);
 
     while (Serial.available()) {
         char module = Serial.read();
@@ -273,6 +279,7 @@ void handleSerial() {
         switch (module) {
             case 'W':
                 wireToBeChanged = Serial.readStringUntil('_').toInt();
+                delay(10);
                 Serial.print("Wires Lösung: ");
                 Serial.println(wireToBeChanged);
                 for (int i = 0; i < 6; i++) {
@@ -283,6 +290,7 @@ void handleSerial() {
             case 'K':
                 for (int i = 0; i < 4; i++) {
                     int next = ((String) Serial.read()).toInt();
+                    delay(10);
                     Serial.print("Next Keypad: ");
                     Serial.println(next);
                     keypadOrder[i] = next;
@@ -292,9 +300,13 @@ void handleSerial() {
 
             case 'S': {
                 String blinkSeq = Serial.readStringUntil(',');
+                delay(10);
                 String mistake0Seq = Serial.readStringUntil(',');
+                delay(10);
                 String mistake1Seq = Serial.readStringUntil(',');
+                delay(10);
                 String mistake2Seq = Serial.readStringUntil('_');
+                delay(10);
                 int length = blinkSeq.length();
 
                 char * blinkSeqC;
@@ -313,10 +325,13 @@ void handleSerial() {
                     simonSaysMistake2Seq[i] = ((String) mistake2SeqC[i]).toInt();
                 }
 
-                Serial.println(simonSaysBlinkSeq[0]);
-                Serial.println(simonSaysMistake0Seq[0]);
-                Serial.println(simonSaysMistake1Seq[0]);
-                Serial.println(simonSaysMistake2Seq[0]);
+                for (int i = 0; i < length; i++) {
+                  Serial.println(simonSaysBlinkSeq[i]);
+                }
+
+                //Serial.println(simonSaysMistake0Seq[0]);
+                //Serial.println(simonSaysMistake1Seq[0]);
+                //Serial.println(simonSaysMistake2Seq[0]);
                 simonSaysIndex = 0;
             }
 
@@ -341,18 +356,23 @@ void handleSerial() {
             case 'L':
                 labyrinthCurrentMaze = ((String) Serial.read()).toInt();
                 Serial.read();
+                delay(10);
                 labyrinthPlayerX = ((String) Serial.read()).toInt();
                 labyrinthPlayerY = ((String) Serial.read()).toInt();
                 Serial.read();
+                delay(10);
                 labyrinthGoalX = ((String) Serial.read()).toInt();
                 labyrinthGoalY = ((String) Serial.read()).toInt();
                 Serial.read();
+                delay(10);
                 Serial.println(labyrinthCurrentMaze);
             break;
 
             case 'M': {
                 morseSolution = Serial.readStringUntil(',').toInt();
+                delay(10);
                 String seq = Serial.readStringUntil('_');
+                delay(10);
                 seq.toCharArray(morseSeq, seq.length());
                 morseIndex = 0;
                 Serial.println(morseSeq);
@@ -362,7 +382,12 @@ void handleSerial() {
                 Serial.read();
             break;
         }
+
+        delay(1000);
     }
+
+    delay(2000);
+    Serial.println("test");
 
     timerBeeping = false;
     for (int i = 0; i < 4; i++) {
@@ -372,7 +397,8 @@ void handleSerial() {
         updateClock(false);
         delay(500);
     }
-    gameActive = true;
+    gameTimer = time;
+    //gameActive = true;
 }
 void updateClock(bool on) {
     if (on) {
@@ -694,7 +720,6 @@ void handleMorse() {
     } 
 }
 
-unsigned int timer = millis();
 void loop() {
     if (Serial.available()) handleSerial();
     gameTimeDisplay.refreshDisplay();
