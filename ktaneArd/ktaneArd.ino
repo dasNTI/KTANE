@@ -3,6 +3,7 @@
 #include <SevSeg.h>
 #include <DFRobotDFPlayerMini.h>
 #include "SoftwareSerial.h"
+void(* resetFunc) (void) = 0;
 
 bool activeModules[6] { // wires, keypads, simonSays, password, labyrinth, morse
   false, false,
@@ -15,7 +16,7 @@ bool solvedModules[6] {
   false, false
 };
 int moduleStatusLedPins[] {
-    22, 23, 24, 25, 26, 27                                                                                                                                                                                          , 1, 2, 3, 4, 5
+    22, 23, 24, 25, 26, 27
 };
 int currentMistakes = 0;
 bool gameActive = false;
@@ -23,7 +24,7 @@ bool gamePaused = false;
 int gameTimer = 0;
 int gameClockInterval = 1000;
 int gameClock = 0;
-bool timerBeeping = true;
+int timerBeepingTimeout = 0;
 
 SevSeg gameTimeDisplay;
 bool gameTimeDisplayOn = true;
@@ -43,19 +44,20 @@ bool initialWires[6] {
 int wireToBeChanged = 0;
 
 // Keypads
-const int keypadBtnPins[4] {53, 46, 49, 50};
+const int keypadBtnPins[4] {49, 50, 53, 46};
 const int keypadLedPins[4] {47, 52, 51, 48};
-int keypadOrder[4] {0, 1, 2, 3};
+int keypadOrder[4] {3, 2, 1, 0};
 int keypadCurrentIndex = 0;
 bool keypadBtnPressed = false;
 
 // simonSays
 const int simonSaysBtnPins[4] {38, 42, 40, 44};
 const int simonSaysLedPins[4] {45, 41, 43, 39};
-int * simonSaysBlinkSeq;
-int * simonSaysMistake0Seq;
-int * simonSaysMistake1Seq;
-int * simonSaysMistake2Seq;
+int simonSaysBlinkSeq[5];
+int simonSaysMistake0Seq[5];
+int simonSaysMistake1Seq[5];
+int simonSaysMistake2Seq[5];
+int simonSaysSeqLength = 0;
 int simonSaysIndex = 0;
 int simonSaysUnlockedCount = 0;
 int simonSaysClock = 0;
@@ -187,19 +189,27 @@ bool labyrinthBtnPressed = false;
 bool labyrinthPlayerVisible = false;
 
 // morse
-char * morseSeq = "";
+String morseSeq = "";
 int morseSeqLength = 0;
 int morseIndex = 0;
 int morseSolution = 0;
 int morseClock = 0;
 bool morseLampStatus = false;
+bool morseBtnPressed = false;
 #define morseLedPin 36
 #define morsePotPin A10
 #define morseBtnPin 37
 
+
+String urlParts[4];
+bool displayInfoIdle = false;
+int displayInfoIdleIndex = 0;
+
+
 void setup() {
     Serial.begin(9600);
 
+    for (int i = 0; i < 6; i++) pinMode(moduleStatusLedPins[i], OUTPUT);
     for (int i = 0; i < 6; i++) pinMode(wirePins[i], INPUT_PULLUP);
     for (int i = 0; i < 4; i++) pinMode(keypadBtnPins[i], INPUT_PULLUP);
     for (int i = 0; i < 4; i++) pinMode(keypadLedPins[i], OUTPUT);
@@ -213,7 +223,8 @@ void setup() {
 
     labyrinthMatrix.shutdown(0, false);
     labyrinthMatrix.setIntensity(0, 2);
-    labyrinthMatrix.clearDisplay(0);
+    //labyrinthMatrix.clearDisplay(0);
+    labyrinthMatrix.setRow(0, 1, B01010101);
     
     //passwordLcd.begin(2, 16);
     //pinMode(passwordSubmitPin, INPUT_PULLUP);
@@ -222,45 +233,80 @@ void setup() {
     pinMode(SecondMistakeLedPin, OUTPUT);
     byte displayPins1[4] {A5, A2, A1, 13};
     byte displayPins2[8] {A4, A0, 11, 9, 8, A3, 12, 10};
-    gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2, false, true);
-    gameTimeDisplay.setBrightness(90);
-    gameTimeDisplay.setNumber(6969, -1);
+    gameTimeDisplay.begin(COMMON_CATHODE, 4, displayPins1, displayPins2, false, false);
+    gameTimeDisplay.setBrightness(80);
+    gameTimeDisplay.setNumber(1234, 2);
 
     soundSerial.begin(9600);
-  	delay(1000);
+  	wait(1000);
     if (!dfPlayer.begin(soundSerial)) {  //Use softwareSerial to communicate with mp3.
         Serial.println(F("df kacke"));
         while(true){
             delay(0);
         }
     }
+    dfPlayer.volume(1);
     dfPlayer.play(5);
-    for (int i = 0; i < 6; i++) pinMode(moduleStatusLedPins[i], OUTPUT);
 
+}
+
+int convert(char c) {
+  //if (c == '0') return 0;
+  //if (c == '1') return 1;
+  //if (c == '2') return 2;
+  //if (c == '3') return 3;
+  //return 4;
+  return ((String) c).toInt();
+}
+String readSerialUntil(char terminator) {
+  char * str;
+  while (Serial.peek() != terminator) {
+    str += Serial.read();
+  }
+  Serial.read();
+}
+void wait(int milliSeconds) {
+    for (int i = 0; i < milliSeconds; i += 2) {
+        delay(2);
+        gameTimeDisplay.refreshDisplay();
+    };
+    return;
 }
 
 void handleSerial() {
     char command = Serial.read();
-    delay(1000);
+    wait(1000);
 
-    if (command == 'D') {
-        String serialNr = Serial.readStringUntil(';');
-        String url = Serial.readStringUntil('\n');
-        //passwordLcd.clear();
-        //passwordLcd.setCursor(0, 0);
-        //passwordLcd.print("Seriennr.:" + serialNr);
-        //passwordLcd.setCursor(0, 1);
-        //passwordLcd.print(url);
-
-        return;
+    if (command == 'I') {
+        urlParts[0] = Serial.readStringUntil('.');
+        urlParts[1] = Serial.readStringUntil('.');
+        urlParts[2] = Serial.readStringUntil('.');
+        urlParts[3] = Serial.readStringUntil(';');
+        displayInfoIdle = true;
+        displayInfoIdleIndex = 0;
     }
-    if (command == 'A') {
+    if (command == 'B') {
+        displayInfoIdle = false;
+        gameTimeDisplay.blank();
+    }
+
+    if (command == 'R') {
         gameActive = false;
-        for (int i = 0; i < 6; i++) {
-            solvedModules[i] = false;
-            activeModules[i] = false;
-        }
-        return;
+        gamePaused = false;
+        for (int i = 0; i < 6; i++) digitalWrite(moduleStatusLedPins[i], LOW);
+        for (int i = 0; i < 4; i++) digitalWrite(keypadLedPins[i], LOW);
+        for (int i = 0; i < 4; i++) digitalWrite(simonSaysLedPins[i], LOW);
+        //for (int i = 0; i < 10; i++) pinMode(passwordBtnPins[i], INPUT_PULLUP);
+        digitalWrite(morseLedPin, LOW);
+
+        labyrinthMatrix.clearDisplay(0);
+        
+        //passwordLcd.begin(2, 16);
+        //pinMode(passwordSubmitPin, INPUT_PULLUP);
+
+        digitalWrite(FirstMistakeLedPin, LOW);
+        digitalWrite(SecondMistakeLedPin, LOW);
+        gameTimeDisplay.blank();
     }
 
     if (command != 'G') return;
@@ -272,6 +318,11 @@ void handleSerial() {
     Serial.print("T: ");
     Serial.println(time);
 
+    gameTimeDisplay.setBrightness(1);
+    gameTimeDisplay.setNumber(0000, 3);
+
+    for (int i = 0; i < 6; i++) solvedModules[i] = false;
+
     while (Serial.available()) {
         char module = Serial.read();
         Serial.println(module);
@@ -279,50 +330,51 @@ void handleSerial() {
         switch (module) {
             case 'W':
                 wireToBeChanged = Serial.readStringUntil('_').toInt();
-                delay(10);
-                Serial.print("Wires Lösung: ");
+                wait(10);
                 Serial.println(wireToBeChanged);
                 for (int i = 0; i < 6; i++) {
                     initialWires[i] = digitalRead(wirePins[i]);
                 }
+                activeModules[0] = true;
+                solvedModules[0] = false;
             break;
 
-            case 'K':
+            case 'K': {
+                String seq = Serial.readStringUntil('_');
+
                 for (int i = 0; i < 4; i++) {
-                    int next = ((String) Serial.read()).toInt();
-                    delay(10);
-                    Serial.print("Next Keypad: ");
-                    Serial.println(next);
+                    int next = ((String) seq.charAt(i)).toInt();
+                    wait(10);
                     keypadOrder[i] = next;
                 }
+                Serial.println(keypadOrder[0]);
+                Serial.println(keypadOrder[1]);
+
                 keypadCurrentIndex = 0;
-            break;
+                activeModules[1] = true;
+                solvedModules[1] = false;
+            }
 
             case 'S': {
-                String blinkSeq = Serial.readStringUntil(',');
-                delay(10);
-                String mistake0Seq = Serial.readStringUntil(',');
-                delay(10);
-                String mistake1Seq = Serial.readStringUntil(',');
-                delay(10);
-                String mistake2Seq = Serial.readStringUntil('_');
-                delay(10);
-                int length = blinkSeq.length();
+                simonSaysUnlockedCount = 0;
 
-                char * blinkSeqC;
-                char * mistake0SeqC;
-                char * mistake1SeqC;
-                char * mistake2SeqC;
-                blinkSeq.toCharArray(blinkSeqC, length);
-                mistake0Seq.toCharArray(mistake0SeqC, length);
-                mistake1Seq.toCharArray(mistake1SeqC, length);
-                mistake2Seq.toCharArray(mistake2SeqC, length);
+                String blinkSeq = Serial.readStringUntil(',');
+                wait(10);
+                String mistake0Seq = Serial.readStringUntil(',');
+                wait(10);
+                String mistake1Seq = Serial.readStringUntil(',');
+                wait(10);
+                String mistake2Seq = Serial.readStringUntil('_');
+                wait(10);
+                int length = blinkSeq.length();
+                simonSaysSeqLength = length;
+                Serial.println(blinkSeq);
 
                 for (int i = 0; i < length; i++) {
-                    simonSaysBlinkSeq[i] = ((String) blinkSeqC[i]).toInt();
-                    simonSaysMistake0Seq[i] = ((String) mistake0SeqC[i]).toInt();
-                    simonSaysMistake1Seq[i] = ((String) mistake1SeqC[i]).toInt();
-                    simonSaysMistake2Seq[i] = ((String) mistake2SeqC[i]).toInt();
+                    simonSaysBlinkSeq[i] = ((String) blinkSeq.charAt(i)).toInt();
+                    simonSaysMistake0Seq[i] = ((String) mistake0Seq.charAt(i)).toInt();
+                    simonSaysMistake1Seq[i] = ((String) mistake1Seq.charAt(i)).toInt();
+                    simonSaysMistake2Seq[i] = ((String) mistake2Seq.charAt(i)).toInt();
                 }
 
                 for (int i = 0; i < length; i++) {
@@ -333,6 +385,8 @@ void handleSerial() {
                 //Serial.println(simonSaysMistake1Seq[0]);
                 //Serial.println(simonSaysMistake2Seq[0]);
                 simonSaysIndex = 0;
+                activeModules[2] = true;
+                solvedModules[2] = false;
             }
 
             case 'P':
@@ -351,31 +405,51 @@ void handleSerial() {
                 //}
                 //Serial.read();
                 //Serial.println(passwordChars[0][0]);
+                //activeModules[3] = true;
+                //solvedModules[3] = false;
             break;
 
             case 'L':
-                labyrinthCurrentMaze = ((String) Serial.read()).toInt();
-                Serial.read();
-                delay(10);
-                labyrinthPlayerX = ((String) Serial.read()).toInt();
-                labyrinthPlayerY = ((String) Serial.read()).toInt();
-                Serial.read();
-                delay(10);
-                labyrinthGoalX = ((String) Serial.read()).toInt();
-                labyrinthGoalY = ((String) Serial.read()).toInt();
-                Serial.read();
-                delay(10);
+                char c;
+                c = Serial.read();
+                labyrinthCurrentMaze = ((String) c).toInt();
                 Serial.println(labyrinthCurrentMaze);
+                Serial.read();
+                wait(10);
+                c = Serial.read();
+                labyrinthPlayerX = ((String) c).toInt();
+                c = Serial.read();
+                labyrinthPlayerY = ((String) c).toInt();
+                Serial.read();
+                wait(10);
+                c = Serial.read();
+                labyrinthGoalX = ((String) c).toInt();
+                c = Serial.read();
+                labyrinthGoalY = ((String) c).toInt();
+                Serial.read();
+                wait(10);
+                Serial.println(labyrinthCurrentMaze);
+                activeModules[4] = true;
+                solvedModules[4] = false;
             break;
 
             case 'M': {
-                morseSolution = Serial.readStringUntil(',').toInt();
-                delay(10);
-                String seq = Serial.readStringUntil('_');
-                delay(10);
-                seq.toCharArray(morseSeq, seq.length());
                 morseIndex = 0;
+                morseClock = 0;
+                morseLampStatus = false;
+                morseBtnPressed = false;
+
+                morseSolution = Serial.readStringUntil(',').toInt();
+                wait(10);
+                String seq = Serial.readStringUntil('_');
+                wait(10);
+                morseSeq = seq;
+                morseSeqLength = seq.length();
+                morseIndex = 0;
+                Serial.println(morseSolution);
                 Serial.println(morseSeq);
+                activeModules[5] = true;
+                solvedModules[5] = false;
             }
 
             default:
@@ -383,22 +457,23 @@ void handleSerial() {
             break;
         }
 
-        delay(1000);
+        wait(1000);
     }
 
-    delay(2000);
+    wait(2000);
     Serial.println("test");
 
-    timerBeeping = false;
+    timerBeepingTimeout = 2;
     for (int i = 0; i < 4; i++) {
         gameTimer = 4 - i;
         updateClock(true);
-        delay(500);
+        wait(500);
         updateClock(false);
-        delay(500);
+        wait(500);
     }
     gameTimer = time;
-    //gameActive = true;
+    gameActive = true;
+    dfPlayer.play(5);
 }
 void updateClock(bool on) {
     if (on) {
@@ -411,19 +486,29 @@ void updateClock(bool on) {
     int seconds = gameTimer % 60;
 
     if (minutes != 0) {
-        gameTimeDisplay.setNumber(seconds + minutes * 100, 4);
+        gameTimeDisplay.setNumber(seconds + minutes * 100, 2);
+        gameTimeDisplay.refreshDisplay();
         return;
     }
 
-
+    gameTimeDisplay.setNumber(seconds, 2);
+    gameTimeDisplay.refreshDisplay();
 }
 void increaseMistakes() {
+    timerBeepingTimeout = 3;
     dfPlayer.play(3);
     currentMistakes++;
     gameClockInterval -= 250;
     if (currentMistakes == 1) digitalWrite(FirstMistakeLedPin, HIGH);
     if (currentMistakes == 2) digitalWrite(SecondMistakeLedPin, HIGH);
     if (currentMistakes == 3) gamePaused = true;
+}
+void checkIfDone() {
+    for (int i = 0; i < 6; i++) {
+        if (solvedModules[i] != activeModules[i]) return;
+    }
+    gamePaused = true;
+    dfPlayer.play(6);
 }
 
 void handleWires() {
@@ -432,6 +517,7 @@ void handleWires() {
         if (i == wireToBeChanged) {
             solvedModules[0] = true;
             digitalWrite(moduleStatusLedPins[0], HIGH);
+            checkIfDone();
             return;
         }
 
@@ -441,6 +527,7 @@ void handleWires() {
     }
 }
 void handleKeypads() {
+    Serial.println(keypadOrder[keypadCurrentIndex]);
     if (keypadBtnPressed) {
         for (int i = 0; i < 4; i++) {
             if (digitalRead(keypadBtnPins[i]) == LOW) return; 
@@ -452,23 +539,23 @@ void handleKeypads() {
         if (digitalRead(keypadBtnPins[i]) != LOW) continue;
         keypadBtnPressed = true;
 
-        if (keypadOrder[keypadCurrentIndex] == i) {
+        if (i == keypadOrder[keypadCurrentIndex]) {
             digitalWrite(keypadLedPins[i], HIGH);
             keypadCurrentIndex++;
         }else {
             keypadCurrentIndex = 0;
             for (int i = 0; i < 4; i++) digitalWrite(keypadLedPins[i], LOW);
             increaseMistakes();
-        	return;
         }
+        return;
     }
 }
 void handleSimonSays() {
     simonSaysClock += 50;
 
     if (!simonSaysTyping) {
-        if (simonSaysIndex == simonSaysUnlockedCount) {
-            if (simonSaysClock > 1500) {
+        if (simonSaysIndex == simonSaysUnlockedCount + 1) {
+            if (simonSaysClock > 1250) {
                 simonSaysClock = 0;
                 simonSaysIndex = 0;
             }
@@ -486,9 +573,9 @@ void handleSimonSays() {
     }
 
     if (simonSaysTyping) {
-        if (simonSaysClock == 750) {
+        if (simonSaysClock == 400) {
             for (int i = 0; i < 4; i++) {
-                digitalWrite(simonSaysBtnPins[i], LOW);
+                digitalWrite(simonSaysLedPins[i], LOW);
             }
         }
 
@@ -509,39 +596,48 @@ void handleSimonSays() {
     for (int i = 0; i < 4; i++) {
         if (simonSaysBtnPressed) break;
         if (digitalRead(simonSaysBtnPins[i]) == LOW) {
+            Serial.println(i);
             if (!simonSaysTyping) simonSaysIndex = 0;
             simonSaysTyping = true;
             simonSaysClock = 0;
+            simonSaysBtnPressed = true;
+            digitalWrite(simonSaysLedPins[i], HIGH);
 
-            int * seq;
-            if (currentMistakes == 0) seq = simonSaysMistake0Seq;
-            if (currentMistakes == 1) seq = simonSaysMistake1Seq;
-            if (currentMistakes == 2) seq = simonSaysMistake2Seq;
+            int seq[5] {0, 0, 0, 0, 0};
+            for (int j = 0; j < 5; j++) {
+                if (currentMistakes == 0) seq[j] = simonSaysMistake0Seq[j];
+                if (currentMistakes == 1) seq[j] = simonSaysMistake1Seq[j];
+                if (currentMistakes == 2) seq[j] = simonSaysMistake2Seq[j];
+            }
 
-            if (i != simonSaysMistake0Seq[simonSaysIndex]) {
+            if (i != seq[simonSaysIndex]) {
                 increaseMistakes();
                 if (simonSaysIndex != 0) digitalWrite(simonSaysBtnPins[simonSaysIndex - 1], LOW);
                 simonSaysUnlockedCount = 1;
-                simonSaysIndex = 1;
+                simonSaysIndex = 2;
                 simonSaysClock = -1500;
             } else {
                 if (simonSaysIndex != 0) {
                     digitalWrite(simonSaysLedPins[
-                        simonSaysMistake0Seq[simonSaysIndex - 1]
+                        seq[simonSaysIndex - 1]
                     ], LOW);
-                    delay(25);
+                    wait(25);
                 }
 
                 digitalWrite(simonSaysBtnPins[i], HIGH);
                 simonSaysIndex++;
-                if (simonSaysIndex == simonSaysUnlockedCount) {
+                if (simonSaysIndex == simonSaysUnlockedCount + 1) {
                     simonSaysClock = -1000;
                     simonSaysUnlockedCount++;
                     simonSaysIndex++;
 
-                    if (simonSaysUnlockedCount == sizeof(simonSaysBlinkSeq) / sizeof(simonSaysBlinkSeq[0])) {
+                    if (simonSaysUnlockedCount == simonSaysSeqLength) {
                         solvedModules[2] = true;
+                        checkIfDone();
                         digitalWrite(moduleStatusLedPins[2], HIGH);
+                        for (int i = 0; i < 4; i++) {
+                            digitalWrite(simonSaysLedPins[i], LOW);
+                        }
                     }
                 }
             }
@@ -677,28 +773,38 @@ void handleLabyrinth() {
     }
 }
 void handleMorse() {
-    morseClock++;
+    morseClock += 50;
 
-    if (digitalRead(morseBtnPin) == LOW) {
+    if (morseBtnPressed) {
+        if (digitalRead(morseBtnPin) != LOW) morseBtnPressed = false;
+    }
+
+    if (digitalRead(morseBtnPin) == LOW && !morseBtnPressed) {
         int v = analogRead(morsePotPin);
-        int freq = round(v / 16);
-        if (freq == morseSolution) {
+        float freq = (float) v / 1023 * 14;
+        freq = ceil(freq - freq / 14);
+        if (13 - freq == morseSolution) {
             solvedModules[5] = true;
             digitalWrite(moduleStatusLedPins[5], HIGH);
+            digitalWrite(morseLedPin, LOW);
+            checkIfDone();
+        }else {
+            increaseMistakes();
+            morseBtnPressed = true;
         }
     }
 
     if (morseIndex == morseSeqLength) {
-        if (morseClock >= 1500) {
+        if (morseClock >= 2500) {
             morseClock = 0;
             morseIndex = 0;
         }
         return;
     }
 
-    char c = morseSeq[morseIndex];
+    char c = morseSeq.charAt(morseIndex);
     if (c == '-') {
-        if (morseClock >= 850) {
+        if (morseClock >= 1250) {
             morseClock = 0;
             morseIndex++;
         }
@@ -724,15 +830,40 @@ void loop() {
     if (Serial.available()) handleSerial();
     gameTimeDisplay.refreshDisplay();
 
+    if (displayInfoIdle) {
+        switch (displayInfoIdleIndex) {
+            case 0:
+                gameTimeDisplay.setChars("IP");
+                break;
+            case 1:
+                gameTimeDisplay.setChars(urlParts[0].c_str());
+                break;
+            case 2:
+                gameTimeDisplay.setChars(urlParts[1].c_str());
+                break;
+            case 3:
+                gameTimeDisplay.setChars(urlParts[2].c_str());
+                break;
+            case 4:
+                gameTimeDisplay.setChars(urlParts[3].c_str());
+                displayInfoIdleIndex = -1;
+                break;
+        }
+        displayInfoIdleIndex++;
+        wait(2000);
+    }
+
     if (!gameActive) return;
     gameClock += 50;
     if (gameClock == gameClockInterval) {
         gameClock = 0;
         gameTimer--;
-        if (timerBeeping) dfPlayer.play(1);
-        if (!timerBeeping) {
-            dfPlayer.play(5);
-            timerBeeping = true;
+        if (gameTimer == 0) gamePaused = true;
+
+        if (timerBeepingTimeout == 0) {
+            //dfPlayer.play(1);
+        } else {
+            timerBeepingTimeout--;
         }
     }
     updateClock(true);
@@ -740,15 +871,21 @@ void loop() {
     if (gamePaused) {
         if (currentMistakes == 3 || gameTimer == 0) {
             dfPlayer.play(4);
+            for (int i = 0; i < 8; i++) {
+                updateClock(gameTimeDisplayOn);
+                gameTimeDisplayOn = !gameTimeDisplayOn;
+                if (Serial.available()) handleSerial();
+                wait(500);
+            }
+            resetFunc();
         }else {
             dfPlayer.play(6);
-        }
-
-        while (gamePaused) {
-            updateClock(gameTimeDisplayOn);
-            gameTimeDisplayOn = !gameTimeDisplayOn;
-            if (Serial.available()) handleSerial();
-            delay(500);
+            while (gamePaused) {
+                updateClock(gameTimeDisplayOn);
+                gameTimeDisplayOn = !gameTimeDisplayOn;
+                if (Serial.available()) handleSerial();
+                wait(500);
+            }
         }
         return;
     }
@@ -760,5 +897,5 @@ void loop() {
     if (activeModules[4] && !solvedModules[4]) handleLabyrinth();
     if (activeModules[5] && !solvedModules[5]) handleMorse();
 
-    delay(50);
+    wait(50);
 }

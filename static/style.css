@@ -24,7 +24,7 @@ body {
     overflow-x: hidden;
 }
 :root {
-    --module-size: min(65vh, 65vw);
+    --module-size: min(60vh, 60vw);
 }
 
 .center-flex {
@@ -45,6 +45,12 @@ body {
     border: none;
     font-size: 30px;
     z-index: 10;
+}
+#srnr {
+    position: absolute;
+    top: 1em;
+    right: 1em;
+    font-size: 2em;
 }
 
 #slide-container {

@@ -20,6 +20,12 @@ $('#fullscreen').click(() => {
     }
 });
 
+fetch(location.origin + '/srnr').then(res => {
+    res.text().then(t => {
+        $('[data-srnr]').html(t);
+    });
+});
+
 $('.activator').each((i, input) => {
     $(input).change(() => {
         const module = input.id.replace('activate-', '');
@@ -182,7 +188,7 @@ async function randomModules(ani) {
     activeModules = await modules.json();
     currentKeypads = activeModules.keypads;
     currentLabyrinth = activeModules.labyrinth;
-    currentWires = activeModules.wires;
+    currentWires = activeModules.wires || [1, 2, 0, 0, 4, 0];
 
     $('.activator').each((i, checkbox) => {
         let value = activeModules[checkbox.id.replace('activate-', '')];
@@ -229,5 +235,9 @@ $('[data-start-btn]').click(() => {
         headers: {
             "Content-Type": "application/json"
         }
+    }).then(() => {
+        $('[data-start-btn]').html(
+            $('[data-start-btn]').html() == 'Start' ? 'Reset' : 'Start'
+        );
     });
 });

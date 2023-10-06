@@ -19,9 +19,6 @@ const app = express();
 app.use(express.json());
 app.use(bodyParser.urlencoded());   
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
 
 
 var currentSetup = {
@@ -32,6 +29,7 @@ var currentSetup = {
     labyrinth: false,
     morse: false
 }
+var gameActive = false;
 
 var serialNr = "";
 var serialNrLastDigitOdd;
@@ -45,22 +43,39 @@ function handleSerialNr() {
             serialNr += serialPossible[index];
         }
     }
-
+    
     let lastDigit = serialNr.split('').filter(d => /\d/.test(d)).pop() * 1;
     serialNrLastDigitOdd = lastDigit % 2 == 1;
-
+    
     serialNrVowel = /[AEIOU]/.test(serialNr);
 }
 handleSerialNr();
 
+var alreadyConnected = false;
+app.get('/', (req, res) => {
+    if (!alreadyConnected) {
+        alreadyConnected = true;
+        serial.write("B");
+    }
+    res.sendFile(__dirname + '/index.html');
+});
+
 app.post('/start', (req, res) => {
+    if (gameActive) {
+        gameActive = false;
+        serial.write('R');
+        res.sendStatus(200);
+        res.end();  
+        return;
+    }
+
     let text = "G";
     let modules = req.body;
-
+    
     let time = req.query['time'] * 2;
     if (String(time).length == 1) time = '0' + time;
     text += time + '_';
-
+    
     if (modules.wires) {
         let wireSolution = null;
         function filterW(color, polarity) {
@@ -74,10 +89,10 @@ app.post('/start', (req, res) => {
         function certainNonEmptyWire(index) {
             let map = modules.wires.map((v, i) => {
                 return {c: v, i: i}}
-            );
-
-            if (index == -1) return map.filter(w => w.c != 0).pop();
-            return map.filter(w => w.c != 0)[index];
+                );
+                
+                if (index == -1) return map.filter(w => w.c != 0).pop();
+                return map.filter(w => w.c != 0)[index];
         }
 
         switch (filterW(0, false).length) {
@@ -341,6 +356,7 @@ app.post('/start', (req, res) => {
 
     serial.write(text);
     console.log(text);
+    gameActive = true;
     res.sendStatus(200);
     res.end();
 });
@@ -403,9 +419,15 @@ app.get('/random', (req, res) => {
         currentSetup.labyrinth = Math.floor(Math.random() * 8);
     }
 
+    currentSetup.labyrinth = false;
+    currentSetup.password = false;
     console.log(currentSetup);
 
     res.send(currentSetup);
+    res.end();
+});
+app.get('/srnr', (req, res) => {
+    res.send(serialNr);
     res.end();
 });
 
@@ -416,6 +438,6 @@ server.listen(3000, () => {
     console.log(serialNr);
     console.log(require('ip').address());
     setTimeout(() => {
-        serial.write('D' + serialNr + ";" + require('ip').address());
-    }, 1000);
+        serial.write("I" + require('ip').address() + ';');
+    }, 5000);
 });
