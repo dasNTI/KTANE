@@ -75,6 +75,16 @@ app.post('/start', (req, res) => {
     let time = req.query['time'] * 2;
     if (String(time).length == 1) time = '0' + time;
     text += time + '_';
+
+    let test = true;
+    Object.values(modules).forEach(e => {
+        if (e) test = false;
+    });
+    if (test) {
+        res.send(400);
+        res.end();
+        return;
+    }
     
     if (modules.wires) {
         let wireSolution = null;
@@ -348,7 +358,7 @@ app.post('/start', (req, res) => {
             ü: '0011'
         };
 
-        let index = Math.floor(Math.random() * words.length);
+        let index = Math.floor(Math.random() * (words.length - 2)) + 1;
         let code = words[index].split('').map(v => alphabet[v]).join('-');
 
         text += index + ',' + code + '_';

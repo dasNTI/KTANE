@@ -235,7 +235,12 @@ $('[data-start-btn]').click(() => {
         headers: {
             "Content-Type": "application/json"
         }
-    }).then(() => {
+    }).then(res => {
+        if (res.status == 400) {
+            alert("error");
+            location.reload();
+        }
+
         $('[data-start-btn]').html(
             $('[data-start-btn]').html() == 'Start' ? 'Reset' : 'Start'
         );

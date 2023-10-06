@@ -28,6 +28,7 @@ int timerBeepingTimeout = 0;
 
 SevSeg gameTimeDisplay;
 bool gameTimeDisplayOn = true;
+int gameTimeDisplayTimeout = 0;
 #define FirstMistakeLedPin A7
 #define SecondMistakeLedPin A6
 
@@ -196,9 +197,13 @@ int morseSolution = 0;
 int morseClock = 0;
 bool morseLampStatus = false;
 bool morseBtnPressed = false;
+float morsePrevFreq;
 #define morseLedPin 36
 #define morsePotPin A10
 #define morseBtnPin 37
+int morseFrequencies[] {
+    3505, 3515, 3522, 3532, 3535, 3542, 3545, 3552, 3555, 3565, 3572, 3572, 3575, 352, 3592, 3595
+};
 
 
 String urlParts[4];
@@ -245,7 +250,7 @@ void setup() {
             delay(0);
         }
     }
-    dfPlayer.volume(1);
+    dfPlayer.volume(26);
     dfPlayer.play(5);
 
 }
@@ -307,6 +312,8 @@ void handleSerial() {
         digitalWrite(FirstMistakeLedPin, LOW);
         digitalWrite(SecondMistakeLedPin, LOW);
         gameTimeDisplay.blank();
+        for (int i = 0; i < 6; i++) activeModules[i] = false;
+        for (int i = 0; i < 6; i++) solvedModules[i] = false;
     }
 
     if (command != 'G') return;
@@ -473,9 +480,15 @@ void handleSerial() {
     }
     gameTimer = time;
     gameActive = true;
+    displayInfoIdle = false;
     dfPlayer.play(5);
 }
 void updateClock(bool on) {
+    if (gameTimeDisplayTimeout != 0) {
+        gameTimeDisplayTimeout--;
+        return;
+    }
+
     if (on) {
         gameTimeDisplay.setBrightness(90);
     } else {
@@ -496,7 +509,7 @@ void updateClock(bool on) {
 }
 void increaseMistakes() {
     timerBeepingTimeout = 3;
-    dfPlayer.play(3);
+    if (currentMistakes != 2) dfPlayer.play(3);
     currentMistakes++;
     gameClockInterval -= 250;
     if (currentMistakes == 1) digitalWrite(FirstMistakeLedPin, HIGH);
@@ -527,7 +540,6 @@ void handleWires() {
     }
 }
 void handleKeypads() {
-    Serial.println(keypadOrder[keypadCurrentIndex]);
     if (keypadBtnPressed) {
         for (int i = 0; i < 4; i++) {
             if (digitalRead(keypadBtnPins[i]) == LOW) return; 
@@ -542,6 +554,11 @@ void handleKeypads() {
         if (i == keypadOrder[keypadCurrentIndex]) {
             digitalWrite(keypadLedPins[i], HIGH);
             keypadCurrentIndex++;
+            if (keypadCurrentIndex == 4) {
+                solvedModules[1] = true;
+                digitalWrite(moduleStatusLedPins[1], HIGH);
+                checkIfDone();
+            }
         }else {
             keypadCurrentIndex = 0;
             for (int i = 0; i < 4; i++) digitalWrite(keypadLedPins[i], LOW);
@@ -779,11 +796,19 @@ void handleMorse() {
         if (digitalRead(morseBtnPin) != LOW) morseBtnPressed = false;
     }
 
+    int v = analogRead(morsePotPin);
+    float freq = (float) v / 1023 * 14;
+    freq = 13 - ceil(freq - freq / 14);
+
+    if (freq != morsePrevFreq) {
+        morsePrevFreq = freq;
+        gameTimeDisplayTimeout = 30;
+        gameTimeDisplay.setNumber(morseFrequencies[(int) freq + 1], 3);
+        gameTimeDisplay.refreshDisplay();
+    }
+
     if (digitalRead(morseBtnPin) == LOW && !morseBtnPressed) {
-        int v = analogRead(morsePotPin);
-        float freq = (float) v / 1023 * 14;
-        freq = ceil(freq - freq / 14);
-        if (13 - freq == morseSolution) {
+        if (freq == morseSolution - 1) {
             solvedModules[5] = true;
             digitalWrite(moduleStatusLedPins[5], HIGH);
             digitalWrite(morseLedPin, LOW);
@@ -861,7 +886,7 @@ void loop() {
         if (gameTimer == 0) gamePaused = true;
 
         if (timerBeepingTimeout == 0) {
-            //dfPlayer.play(1);
+            dfPlayer.play(1);
         } else {
             timerBeepingTimeout--;
         }
